@@ -204,11 +204,11 @@
   <div id="mutation-modal" class="modal-overlay">
     <div class="modal-content glass-panel" style="width: 680px; max-height: 90vh;">
       <button class="modal-close" id="mutation-modal-close">×</button>
-      <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 14px;">
+      <div id="mut-modal-agent-header" style="display: flex; align-items: center; gap: 14px; margin-bottom: 14px; cursor: pointer;" title="Click to view thinker profile">
         <div id="mut-modal-avatar" style="width: 52px; height: 52px; border-radius: 50%; font-size: 26px; display: flex; align-items: center; justify-content: center; background: rgba(30,41,59,0.8); border: 2.5px solid #00f3ff;">⚡</div>
         <div>
           <h2 id="mut-modal-agent-name" style="font-size: 1.25rem; color: #00f3ff; margin-bottom: 2px;">Agent Name</h2>
-          <div id="mut-modal-agent-title" style="font-size: 0.8rem; color: #94a3b8;">Agent Title & Era</div>
+          <div id="mut-modal-agent-title" style="font-size: 0.8rem; color: #94a3b8;">Agent Title & Era • <span style="color: #00f3ff; font-weight: 700;">Inspect Profile 🔍</span></div>
         </div>
       </div>
 
@@ -251,7 +251,7 @@
       <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(0, 243, 255, 0.3); border-radius: 10px; padding: 14px;">
         <div style="font-size: 0.78rem; font-weight: 800; color: #00f3ff; text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
           <span>💡 Dialectical Debate Catalyst & Why Changed (思想转变深刻原因分析)</span>
-          <span id="mut-modal-inspired-by" style="font-size: 0.72rem; color: #a855f7; font-weight: 700;">Inspired by Partner</span>
+          <span id="mut-modal-inspired-by" style="font-size: 0.76rem; color: #a855f7; font-weight: 700; cursor: pointer; text-decoration: underline; background: rgba(168,85,247,0.18); padding: 4px 10px; border-radius: 6px;" title="Click to inspect partner profile">Inspired by Partner 🔍</span>
         </div>
         <div id="mut-modal-reason" style="color: #e2e8f0; font-size: 0.82rem; line-height: 1.5;">
           "Detailed debate rationale explaining why the thinker was persuaded..."
@@ -323,12 +323,12 @@
   </button>
 
   <!-- Application Scripts with i18n & Cache Buster -->
-  <script src="js/i18n.js?v=1.3.0"></script>
-  <script src="js/agentsData.js?v=1.3.0"></script>
-  <script src="js/dialogueSynthesizer.js?v=1.3.0"></script>
-  <script src="js/simulationEngine.js?v=1.3.0"></script>
-  <script src="js/worldVisualizer.js?v=1.3.0"></script>
-  <script src="js/audioEffects.js?v=1.3.0"></script>
-  <script src="js/app.js?v=1.3.0"></script>
+  <script src="js/i18n.js?v=1.3.5"></script>
+  <script src="js/agentsData.js?v=1.3.5"></script>
+  <script src="js/dialogueSynthesizer.js?v=1.3.5"></script>
+  <script src="js/simulationEngine.js?v=1.3.5"></script>
+  <script src="js/worldVisualizer.js?v=1.3.5"></script>
+  <script src="js/audioEffects.js?v=1.3.5"></script>
+  <script src="js/app.js?v=1.3.5"></script>
 </body>
 </html>

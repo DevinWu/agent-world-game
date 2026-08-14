@@ -2,7 +2,7 @@
  * Main Application Controller for Agent World Game.
  * Connects UI elements, simulation engine events, canvas visualizer,
  * inspector modal, Worldviews Matrix tab, Cloud Constellation View, Standalone Evolution Stream Section,
- * Mutation Inspector Modal, Export System, and i18n Language Toggle safely.
+ * Interactive Mutation Inspector Modal with Profile Links, Export System, and i18n Language Toggle safely.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -70,6 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Modal Elements - Mutation Inspector
   const mutationModal = document.getElementById('mutation-modal');
   const mutModalClose = document.getElementById('mutation-modal-close');
+  const mutModalAgentHeader = document.getElementById('mut-modal-agent-header');
   const mutModalAvatar = document.getElementById('mut-modal-avatar');
   const mutModalAgentName = document.getElementById('mut-modal-agent-name');
   const mutModalAgentTitle = document.getElementById('mut-modal-agent-title');
@@ -342,14 +343,33 @@ document.addEventListener('DOMContentLoaded', () => {
     mutModalAvatar.textContent = m.agentIcon || '⚡';
     mutModalAvatar.style.borderColor = m.agentColor || '#00f3ff';
     mutModalAgentName.textContent = name;
-    mutModalAgentTitle.textContent = title;
+    mutModalAgentTitle.innerHTML = `${title} • <span style="color: #00f3ff; font-weight: 700; text-decoration: underline;">${I18nManager.t('inspectBtn')} 🔍</span>`;
     mutModalTurn.textContent = `Turn #${m.turn}`;
     mutModalInspiration.textContent = `${m.inspirationScore} / 100 ⚡`;
     mutModalResistance.textContent = `${m.resistanceThreshold || 75} / 100 🛡️`;
     mutModalOldBelief.textContent = `"${oldBelief}"`;
     mutModalNewBelief.textContent = `"${newBelief}"`;
-    mutModalInspiredBy.textContent = `${I18nManager.t('inspiredBy')} ${m.inspiredByIcon || ''} ${inspiredName}`;
+    mutModalInspiredBy.textContent = `${I18nManager.t('inspiredBy')} ${m.inspiredByIcon || ''} ${inspiredName} 🔍`;
     mutModalReason.textContent = reason;
+
+    // Interactive Profile Link: Click Target Agent Header to open full bio & beliefs
+    if (mutModalAgentHeader) {
+      mutModalAgentHeader.onclick = () => {
+        mutationModal.classList.remove('active');
+        openAgentModal(m.agentId);
+      };
+    }
+
+    // Interactive Profile Link: Click Inspiring Partner Tag to open partner's full bio & beliefs
+    if (mutModalInspiredBy) {
+      mutModalInspiredBy.onclick = () => {
+        const partner = engine.agents.find(a => a.name === m.inspiredByName || a.nameZh === m.inspiredByNameZh || a.name === m.inspiredByName || a.nameZh === m.inspiredByName);
+        if (partner) {
+          mutationModal.classList.remove('active');
+          openAgentModal(partner.id);
+        }
+      };
+    }
 
     mutationModal.classList.add('active');
   }
