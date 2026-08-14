@@ -2,7 +2,7 @@
  * Dialogue Synthesizer for Agent World Game.
  * Generates multi-turn sessions (10-14 turns), debate resistance friction,
  * inspiration scores, dialectical mutation rationale ("Why Changed"),
- * reality anomaly glitches, and cosmic epiphanies in both English (en) and Chinese (zh).
+ * full untruncated belief synthesis, reality anomaly glitches, and cosmic epiphanies in both English (en) and Chinese (zh).
  */
 
 var DialogueSynthesizer = {
@@ -53,7 +53,7 @@ var DialogueSynthesizer = {
 
     const avgInspiration = Math.round(totalInspiration / numTurns);
 
-    // Debate & Resistance Check: Thinkers have cognitive resistance (65-92)
+    // Debate & Resistance Check: Thinkers have cognitive resistance (68-93)
     const resistanceThreshold = Math.floor(Math.random() * 25) + 68;
     const debateSucceeded = avgInspiration >= resistanceThreshold;
 
@@ -84,12 +84,13 @@ var DialogueSynthesizer = {
       const sourceIdeaEn = sourceBeliefsEn[Math.floor(Math.random() * 10)];
       const sourceIdeaZh = sourceBeliefsZh[Math.floor(Math.random() * 10)];
 
-      newBelief = `Synthesized insight inspired by ${sourceAgent.name}: "${sourceIdeaEn.slice(0, 35)}..." fused with ${targetAgent.domain}.`;
-      newBeliefZh = `受${sourceAgent.nameZh || sourceAgent.name}启发的合成新认知："${sourceIdeaZh.slice(0, 30)}..." 与 ${targetAgent.domainZh || targetAgent.domain} 产生深层融合。`;
+      // FULL UNTRUNCATED SYNTHESIS (NO SLICING)
+      newBelief = `Synthesized insight inspired by ${sourceAgent.name} ("${sourceIdeaEn}") fused with ${targetAgent.name}'s core perspectives on ${targetAgent.domain}.`;
+      newBeliefZh = `受 ${sourceAgent.nameZh || sourceAgent.name} 思想（"${sourceIdeaZh}"）的深层启发，与 ${targetAgent.nameZh || targetAgent.name} 在 ${targetAgent.domainZh || targetAgent.domain} 领域的认知有机重构而成的全新真理。`;
 
-      mutationReason = `${targetAgent.name} engaged in a multi-turn dialectical debate with ${sourceAgent.name}. After initially defending their original belief ("${oldBelief.slice(0, 40)}..."), ${targetAgent.name} recognized that ${sourceAgent.name}'s argument regarding ${sourceAgent.domain} exposed a fundamental gap in their worldview. The inspiration score (${avgInspiration}/100) overcame ${targetAgent.name}'s cognitive resistance (${resistanceThreshold}/100), leading to an intellectual breakthrough.`;
+      mutationReason = `${targetAgent.name} engaged in a multi-turn dialectical debate with ${sourceAgent.name}. After initially defending their original belief ("${oldBelief}"), ${targetAgent.name} recognized that ${sourceAgent.name}'s core thesis ("${sourceIdeaEn}") exposed a fundamental gap in their worldview. The inspiration score (${avgInspiration}/100) overcame ${targetAgent.name}'s cognitive resistance (${resistanceThreshold}/100), leading to a complete, synthesized breakthrough in ${targetAgent.domain}.`;
 
-      mutationReasonZh = `${targetAgent.nameZh || targetAgent.name} 与 ${sourceAgent.nameZh || sourceAgent.name} 展开了多轮深度辩论与反驳。在最初坚守其原观点（"${oldBeliefZh.slice(0, 30)}..."）后，${targetAgent.nameZh || targetAgent.name} 敏锐地意识到 ${sourceAgent.nameZh || sourceAgent.name} 在 ${sourceAgent.domainZh || sourceAgent.domain} 领域的论证补全了自己知识体系中的底层缺口。辩论灵感分（${avgInspiration}/100）突破了其认知防御屏障（${resistanceThreshold}/100），从而促成了这次深刻的思想演化。`;
+      mutationReasonZh = `${targetAgent.nameZh || targetAgent.name} 与 ${sourceAgent.nameZh || sourceAgent.name} 展开了多轮深度辩论与反驳。在最初坚守其原观点（"${oldBeliefZh}"）后，${targetAgent.nameZh || targetAgent.name} 敏锐地意识到 ${sourceAgent.nameZh || sourceAgent.name} 的核心主张（"${sourceIdeaZh}"）补全了自己知识体系中的底层缺口。辩论灵感分（${avgInspiration}/100）突破了其认知防御屏障（${resistanceThreshold}/100），从而促成了这次深刻的思想演化。`;
     }
 
     const shouldDetectAnomaly = Math.random() < 0.25;

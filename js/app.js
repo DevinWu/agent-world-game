@@ -315,8 +315,8 @@ document.addEventListener('DOMContentLoaded', () => {
           <span style="color: #a855f7; font-weight: 800;">Turn #${m.turn} • #${m.index} Mutated</span>
         </div>
         <div class="mutation-card-diff">
-          <del>${I18nManager.t('wasBelief')} "${oldBelief.slice(0, 45)}..."</del><br>
-          <ins style="color: #00f3ff; font-weight: 600;">${I18nManager.t('nowBelief')} "${newBelief.slice(0, 50)}..."</ins>
+          <del>${I18nManager.t('wasBelief')} "${oldBelief}"</del><br>
+          <ins style="color: #00f3ff; font-weight: 600;">${I18nManager.t('nowBelief')} "${newBelief}"</ins>
         </div>
         <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 8px; display: flex; justify-content: space-between; align-items: center;">
           <span>${I18nManager.t('inspiredBy')} <strong>${inspiredName}</strong></span>
