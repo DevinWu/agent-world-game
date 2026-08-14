@@ -1,7 +1,7 @@
 /**
  * World Visualizer for Agent World Game.
- * Renders 2D Canvas Roaming Academy World with clear Active Dialogue HUD Banners,
- * dual speaker spotlights, on-canvas speech bubbles, and Organic Cloud Constellation Network Layout.
+ * Renders 2D Canvas Roaming Academy World with high-visibility Active Dialogue HUDs,
+ * dynamic anchored speech bubbles, active speaker spotlights, and Organic Cloud Network Layout.
  */
 
 var WorldVisualizer = class WorldVisualizer {
@@ -71,28 +71,28 @@ var WorldVisualizer = class WorldVisualizer {
       sessionTurn,
       totalSessionTurns,
       createdAt: Date.now(),
-      duration: 4000
+      duration: 5000 // 5 seconds display window
     };
 
+    // Dynamically reference agent objects for live position tracking
     this.activeSpeechBubbles = [
       {
-        x: agentA.x,
-        y: agentA.y - 45,
-        text: `${agentA.icon} ${lines[0].text}`,
+        agent: agentA,
+        text: lines[0].text,
         color: agentA.color,
         createdAt: Date.now(),
-        duration: 4000
+        duration: 5000
       },
       {
-        x: agentB.x,
-        y: agentB.y - 45,
-        text: `${agentB.icon} ${lines[1].text}`,
+        agent: agentB,
+        text: lines[1].text,
         color: agentB.color,
-        createdAt: Date.now() + 400,
-        duration: 4000
+        createdAt: Date.now() + 300,
+        duration: 5000
       }
     ];
 
+    // Spawn energy particles between A and B
     for (let i = 0; i < 20; i++) {
       this.particles.push({
         x: agentA.x,
@@ -285,36 +285,39 @@ var WorldVisualizer = class WorldVisualizer {
     });
     ctx.globalAlpha = 1.0;
 
-    // Draw Active Speech Bubbles directly on nodes
+    // Draw Dynamic Anchored Speech Bubbles directly above active speakers
     const now = Date.now();
     this.activeSpeechBubbles = this.activeSpeechBubbles.filter(b => now - b.createdAt < b.duration);
     this.activeSpeechBubbles.forEach(b => {
       const age = now - b.createdAt;
-      if (age > 0) {
+      if (age > 0 && b.agent) {
         ctx.save();
-        ctx.globalAlpha = Math.min(1, Math.max(0, 1 - (age / b.duration) * 0.2));
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+        ctx.globalAlpha = Math.min(1, Math.max(0, 1 - (age / b.duration) * 0.15));
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
         ctx.strokeStyle = b.color;
         ctx.lineWidth = 2;
 
-        const maxBoxW = 240;
-        const textStr = b.text.length > 40 ? b.text.slice(0, 38) + '...' : b.text;
-        const textWidth = Math.min(maxBoxW, ctx.measureText(textStr).width + 24);
-        const boxX = b.x - textWidth / 2;
-        const boxY = b.y - 35;
+        const maxBoxW = 260;
+        const textStr = `${b.agent.icon} ${b.text}`;
+        const shortText = textStr.length > 45 ? textStr.slice(0, 42) + '...' : textStr;
+        const textWidth = Math.min(maxBoxW, ctx.measureText(shortText).width + 24);
+
+        // Dynamically anchor to live agent coordinates
+        const boxX = b.agent.x - textWidth / 2;
+        const boxY = b.agent.y - 48;
 
         ctx.shadowColor = b.color;
-        ctx.shadowBlur = 10;
+        ctx.shadowBlur = 12;
         ctx.beginPath();
-        ctx.roundRect(boxX, boxY, textWidth, 32, 8);
+        ctx.roundRect(boxX, boxY, textWidth, 34, 8);
         ctx.fill();
         ctx.stroke();
 
         ctx.shadowBlur = 0;
         ctx.fillStyle = '#ffffff';
-        ctx.font = '11px Inter, sans-serif';
+        ctx.font = 'bold 11px Inter, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(textStr, b.x, boxY + 20);
+        ctx.fillText(shortText, b.agent.x, boxY + 21);
         ctx.restore();
       }
     });
@@ -326,6 +329,16 @@ var WorldVisualizer = class WorldVisualizer {
       if (age < session.duration) {
         this.drawDialogueBannerHUD(ctx, w, h, session, age);
       }
+    }
+
+    // Idle Simulation Watermark Prompt if not running
+    if (!this.engine.isRunning && this.engine.turns === 0) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(0, 243, 255, 0.7)';
+      ctx.font = 'bold 14px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('▶ Click "Start Simulation" in top header to begin 25 Minds conversations!', w / 2, h - 30);
+      ctx.restore();
     }
   }
 
@@ -347,14 +360,14 @@ var WorldVisualizer = class WorldVisualizer {
       }
     });
 
-    // HIGHLIGHT ACTIVE CONVERSING PAIR (Who & Who is in the conversation)
+    // HIGHLIGHT ACTIVE CONVERSING PAIR
     let activeAgentA = null;
     let activeAgentB = null;
 
     if (this.engine.activeSession) {
       activeAgentA = this.engine.activeSession.agentA;
       activeAgentB = this.engine.activeSession.agentB;
-    } else if (this.currentDialogueSession && (Date.now() - this.currentDialogueSession.createdAt < 3500)) {
+    } else if (this.currentDialogueSession && (Date.now() - this.currentDialogueSession.createdAt < 4500)) {
       activeAgentA = this.currentDialogueSession.agentA;
       activeAgentB = this.currentDialogueSession.agentB;
     }
@@ -362,42 +375,42 @@ var WorldVisualizer = class WorldVisualizer {
     if (activeAgentA && activeAgentB) {
       ctx.save();
 
-      // 1. Dual Glowing Radial Spotlights underneath the conversing pair
+      // 1. Dual Glowing Radial Spotlights underneath conversing agents
       [activeAgentA, activeAgentB].forEach(agent => {
-        const grad = ctx.createRadialGradient(agent.x, agent.y, 5, agent.x, agent.y, 60);
-        grad.addColorStop(0, 'rgba(0, 243, 255, 0.4)');
-        grad.addColorStop(0.6, 'rgba(168, 85, 247, 0.15)');
+        const grad = ctx.createRadialGradient(agent.x, agent.y, 5, agent.x, agent.y, 65);
+        grad.addColorStop(0, 'rgba(0, 243, 255, 0.5)');
+        grad.addColorStop(0.6, 'rgba(168, 85, 247, 0.2)');
         grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
         ctx.fillStyle = grad;
         ctx.beginPath();
-        ctx.arc(agent.x, agent.y, 60, 0, Math.PI * 2);
+        ctx.arc(agent.x, agent.y, 65, 0, Math.PI * 2);
         ctx.fill();
       });
 
-      // 2. Bright Active Conversation Connection Beam
+      // 2. High-contrast Glowing Active Laser Beam
       ctx.strokeStyle = '#00f3ff';
       ctx.shadowColor = '#00f3ff';
-      ctx.shadowBlur = 18;
-      ctx.lineWidth = 4;
+      ctx.shadowBlur = 20;
+      ctx.lineWidth = 4.5;
       ctx.beginPath();
       ctx.moveTo(activeAgentA.x, activeAgentA.y);
       ctx.lineTo(activeAgentB.x, activeAgentB.y);
       ctx.stroke();
 
-      // 3. Floating "💬 TALKING" Pills above active nodes
+      // 3. Floating "💬 CHATTING" Badges above active nodes
       [activeAgentA, activeAgentB].forEach(agent => {
-        ctx.fillStyle = 'rgba(0, 243, 255, 0.9)';
+        ctx.fillStyle = 'rgba(0, 243, 255, 0.95)';
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.roundRect(agent.x - 30, agent.y - 42, 60, 18, 9);
+        ctx.roundRect(agent.x - 36, agent.y - 42, 72, 20, 10);
         ctx.fill();
         ctx.stroke();
 
         ctx.fillStyle = '#000000';
         ctx.font = 'bold 9px Inter, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('💬 CHATTING', agent.x, agent.y - 30);
+        ctx.fillText('💬 CHATTING', agent.x, agent.y - 28);
       });
 
       ctx.restore();
@@ -409,7 +422,7 @@ var WorldVisualizer = class WorldVisualizer {
 
       ctx.save();
       ctx.shadowColor = isConversing ? '#00f3ff' : agent.color;
-      ctx.shadowBlur = isConversing ? 22 : agent.existentialAwareness > 50 ? 15 : 8;
+      ctx.shadowBlur = isConversing ? 24 : agent.existentialAwareness > 50 ? 15 : 8;
 
       ctx.fillStyle = '#0f172a';
       ctx.strokeStyle = isConversing ? '#00f3ff' : agent.color;
@@ -448,24 +461,24 @@ var WorldVisualizer = class WorldVisualizer {
     });
   }
 
-  // Draw On-Canvas Active Dialogue Banner HUD (Shows Who & Who + What They Talked)
+  // Draw High-Visibility On-Canvas Active Dialogue Banner HUD
   drawDialogueBannerHUD(ctx, w, h, session, age) {
-    const fade = Math.min(1, Math.max(0, 1 - (age / session.duration) * 0.15));
+    const fade = Math.min(1, Math.max(0, 1 - (age / session.duration) * 0.1));
 
     ctx.save();
     ctx.globalAlpha = fade;
 
-    const bannerW = Math.min(640, w - 32);
-    const bannerH = 88;
+    const bannerW = Math.min(680, w - 24);
+    const bannerH = 92;
     const bannerX = (w - bannerW) / 2;
-    const bannerY = 16;
+    const bannerY = 14;
 
     // Glowing Glass HUD Box
-    ctx.fillStyle = 'rgba(10, 14, 26, 0.92)';
+    ctx.fillStyle = 'rgba(10, 14, 26, 0.94)';
     ctx.strokeStyle = '#00f3ff';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 2;
     ctx.shadowColor = '#00f3ff';
-    ctx.shadowBlur = 15;
+    ctx.shadowBlur = 18;
 
     ctx.beginPath();
     ctx.roundRect(bannerX, bannerY, bannerW, bannerH, 12);
@@ -474,32 +487,49 @@ var WorldVisualizer = class WorldVisualizer {
 
     ctx.shadowBlur = 0;
 
-    // HUD Header Title
+    // Header Title Bar
     ctx.fillStyle = '#00f3ff';
-    ctx.font = 'bold 11px Inter, sans-serif';
+    ctx.font = 'bold 12px Inter, sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText(`💬 ACTIVE CONVERSATION (${session.agentA.icon} ${session.agentA.name} ↔ ${session.agentB.icon} ${session.agentB.name})`, bannerX + 16, bannerY + 22);
+    ctx.fillText(`💬 ACTIVE DIALOGUE: ${session.agentA.icon} ${session.agentA.name} ↔ ${session.agentB.icon} ${session.agentB.name}`, bannerX + 16, bannerY + 22);
 
     ctx.fillStyle = '#a855f7';
-    ctx.font = 'bold 10px Inter, sans-serif';
+    ctx.font = 'bold 11px Inter, sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText(`Turn ${session.sessionTurn}/${session.totalSessionTurns} • Inspiration: ${session.inspirationScore}/100 ⚡`, bannerX + bannerW - 16, bannerY + 22);
+    ctx.fillText(`Session Turn ${session.sessionTurn}/${session.totalSessionTurns} • Inspiration: ${session.inspirationScore}/100 ⚡`, bannerX + bannerW - 16, bannerY + 22);
+
+    // Separator line
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(bannerX + 16, bannerY + 30);
+    ctx.lineTo(bannerX + bannerW - 16, bannerY + 30);
+    ctx.stroke();
 
     // Dialogue Line A
-    ctx.font = '11px Inter, sans-serif';
+    ctx.font = 'bold 11px Inter, sans-serif';
     ctx.textAlign = 'left';
     ctx.fillStyle = session.agentA.color;
-    ctx.fillText(`${session.agentA.icon} ${session.agentA.name}:`, bannerX + 16, bannerY + 46);
+    const nameA = `${session.agentA.icon} ${session.agentA.name}:`;
+    ctx.fillText(nameA, bannerX + 16, bannerY + 48);
+
+    const offsetA = Math.max(160, ctx.measureText(nameA).width + 24);
+    ctx.font = '11px Inter, sans-serif';
     ctx.fillStyle = '#f8fafc';
     const shortLineA = session.lineA.length > 70 ? session.lineA.slice(0, 67) + '...' : session.lineA;
-    ctx.fillText(shortLineA, bannerX + 110, bannerY + 46);
+    ctx.fillText(shortLineA, bannerX + offsetA, bannerY + 48);
 
     // Dialogue Line B
+    ctx.font = 'bold 11px Inter, sans-serif';
     ctx.fillStyle = session.agentB.color;
-    ctx.fillText(`${session.agentB.icon} ${session.agentB.name}:`, bannerX + 16, bannerY + 68);
+    const nameB = `${session.agentB.icon} ${session.agentB.name}:`;
+    ctx.fillText(nameB, bannerX + 16, bannerY + 72);
+
+    const offsetB = Math.max(160, ctx.measureText(nameB).width + 24);
+    ctx.font = '11px Inter, sans-serif';
     ctx.fillStyle = '#cbd5e1';
     const shortLineB = session.lineB.length > 70 ? session.lineB.slice(0, 67) + '...' : session.lineB;
-    ctx.fillText(shortLineB, bannerX + 110, bannerY + 68);
+    ctx.fillText(shortLineB, bannerX + offsetB, bannerY + 72);
 
     ctx.restore();
   }
