@@ -1,7 +1,8 @@
 /**
  * World Visualizer for Agent World Game.
  * Renders 2D Canvas Roaming Academy World with high-visibility Active Dialogue HUDs,
- * dynamic anchored speech bubbles, active speaker spotlights, cross-platform vector node avatars, and Organic Cloud Network Layout.
+ * dynamic anchored speech bubbles, active speaker spotlights, cross-platform vector node avatars,
+ * and Concentric Radial Social Network Cloud View (Centering the top-connected mind).
  */
 
 // Canvas 2D roundRect polyfill for maximum browser compatibility
@@ -38,6 +39,7 @@ var WorldVisualizer = class WorldVisualizer {
     this.animFrameId = null;
 
     this.cloudNodes = new Map();
+    this.centralHubId = null;
 
     this.resizeCanvas();
     this.initCloudNodes();
@@ -59,7 +61,8 @@ var WorldVisualizer = class WorldVisualizer {
           y: h / 2 + (Math.random() - 0.5) * (h * 0.6),
           vx: 0,
           vy: 0,
-          radius: 22
+          radius: 22,
+          tier: 1
         });
       });
     }
@@ -262,6 +265,7 @@ var WorldVisualizer = class WorldVisualizer {
     });
   }
 
+  // Concentric Radial Social Network Physics (Centering top-connected node)
   updateCloudPhysics() {
     const w = (this.canvas && this.canvas.width) || 800;
     const h = (this.canvas && this.canvas.height) || 550;
@@ -271,28 +275,126 @@ var WorldVisualizer = class WorldVisualizer {
     if (!this.engine || !this.engine.agents) return;
     const agents = this.engine.agents;
 
+    const countMatrix = this.engine.conversationCountMatrix || {};
+    const affMatrix = this.engine.affinityMatrix || {};
+
+    // 1. Calculate Social Network Importance (Chats + Connections + Affinity)
+    let maxSocialScore = -1;
+    let topCentralId = agents[0].id;
+
+    agents.forEach(a => {
+      let totalChats = 0;
+      let totalDegree = 0;
+      let totalAff = 0;
+
+      agents.forEach(b => {
+        if (a.id !== b.id) {
+          const chats = (countMatrix[a.id] && countMatrix[a.id][b.id]) || 0;
+          const aff = (affMatrix[a.id] && affMatrix[a.id][b.id]) || 1.0;
+          if (chats > 0) {
+            totalChats += chats;
+            totalDegree++;
+          }
+          totalAff += aff;
+        }
+      });
+
+      const socialScore = (totalChats * 10) + (totalDegree * 5) + totalAff;
+      if (socialScore > maxSocialScore) {
+        maxSocialScore = socialScore;
+        topCentralId = a.id;
+      }
+    });
+
+    this.centralHubId = topCentralId;
+
+    // 2. Classify Nodes into Radial Hierarchy Tiers from Central Hub
+    const tiers = new Map(); // id -> tier (0: Center, 1: Direct Partner, 2: Extended Friend, 3: Outer)
+    const directPartners = new Set();
+
+    agents.forEach(a => {
+      if (a.id === topCentralId) {
+        tiers.set(a.id, 0);
+      } else {
+        const chatsWithCenter = (countMatrix[topCentralId] && countMatrix[topCentralId][a.id]) || 0;
+        if (chatsWithCenter > 0) {
+          tiers.set(a.id, 1);
+          directPartners.add(a.id);
+        } else {
+          tiers.set(a.id, 2);
+        }
+      }
+    });
+
+    // Check tier 2 vs tier 3 based on connections to tier 1
+    agents.forEach(a => {
+      if (tiers.get(a.id) === 2) {
+        let isConnectedToTier1 = false;
+        directPartners.forEach(pId => {
+          if ((countMatrix[a.id] && countMatrix[a.id][pId]) > 0) {
+            isConnectedToTier1 = true;
+          }
+        });
+        if (!isConnectedToTier1) {
+          tiers.set(a.id, 3);
+        }
+      }
+    });
+
+    // 3. Apply Concentric Radial Forces
     agents.forEach(a => {
       if (!this.cloudNodes.has(a.id)) {
         this.cloudNodes.set(a.id, {
-          x: centerX + (Math.random() - 0.5) * 300,
-          y: centerY + (Math.random() - 0.5) * 300,
+          x: centerX + (Math.random() - 0.5) * 200,
+          y: centerY + (Math.random() - 0.5) * 200,
           vx: 0,
           vy: 0
         });
       }
     });
 
+    // Tier 0 (Central Hub Node): Anchor directly to center of viewport
+    const centerNode = this.cloudNodes.get(topCentralId);
+    if (centerNode) {
+      centerNode.vx += (centerX - centerNode.x) * 0.15;
+      centerNode.vy += (centerY - centerNode.y) * 0.15;
+    }
+
+    // Tier 1 Nodes (Direct Friends): Constrain to Radial Orbit Ring 1 (r ≈ 150-180px)
+    // Tier 2 Nodes (Extended): Constrain to Radial Orbit Ring 2 (r ≈ 260-300px)
+    // Tier 3 Nodes (Outer): Constrain to Radial Orbit Ring 3 (r ≈ 360-400px)
+    agents.forEach((a, idx) => {
+      const node = this.cloudNodes.get(a.id);
+      if (!node || a.id === topCentralId) return;
+
+      const tier = tiers.get(a.id) || 2;
+      const targetRadius = tier === 1 ? 165 : (tier === 2 ? 275 : 375);
+
+      const dx = node.x - centerX;
+      const dy = node.y - centerY;
+      const currentDist = Math.hypot(dx, dy) || 1;
+
+      // Radial ring spring force
+      const radialForce = (currentDist - targetRadius) * 0.03;
+      node.vx -= (dx / currentDist) * radialForce;
+      node.vy -= (dy / currentDist) * radialForce;
+    });
+
+    // Repulsion between adjacent nodes in radial view
     for (let i = 0; i < agents.length; i++) {
       const nodeA = this.cloudNodes.get(agents[i].id);
       if (!nodeA) continue;
       for (let j = i + 1; j < agents.length; j++) {
         const nodeB = this.cloudNodes.get(agents[j].id);
         if (!nodeB) continue;
+
         const dx = nodeB.x - nodeA.x;
         const dy = nodeB.y - nodeA.y;
         const dist = Math.hypot(dx, dy) || 1;
-        if (dist < 220) {
-          const force = (220 - dist) * 0.08;
+        const minSpace = 65;
+
+        if (dist < minSpace) {
+          const force = (minSpace - dist) * 0.12;
           const fx = (dx / dist) * force;
           const fy = (dy / dist) * force;
           nodeA.vx -= fx;
@@ -303,7 +405,7 @@ var WorldVisualizer = class WorldVisualizer {
       }
     }
 
-    const matrix = this.engine.affinityMatrix || {};
+    // Link spring attraction for conversing partners
     for (let i = 0; i < agents.length; i++) {
       const idA = agents[i].id;
       const nodeA = this.cloudNodes.get(idA);
@@ -312,43 +414,36 @@ var WorldVisualizer = class WorldVisualizer {
         const idB = agents[j].id;
         const nodeB = this.cloudNodes.get(idB);
         if (!nodeB) continue;
-        const affA = (matrix[idA] && matrix[idA][idB]) || 1.0;
-        const affB = (matrix[idB] && matrix[idB][idA]) || 1.0;
-        const aff = (affA + affB) / 2;
 
-        if (aff > 1.2) {
+        const chats = (countMatrix[idA] && countMatrix[idA][idB]) || 0;
+        if (chats > 0) {
           const dx = nodeB.x - nodeA.x;
           const dy = nodeB.y - nodeA.y;
           const dist = Math.hypot(dx, dy) || 1;
-          const targetDist = Math.max(60, 260 - (aff * 55));
+          const targetDist = Math.max(70, 240 - chats * 15);
           const springForce = (dist - targetDist) * 0.008;
 
-          const fx = (dx / dist) * springForce;
-          const fy = (dy / dist) * springForce;
-          nodeA.vx += fx;
-          nodeA.vy += fy;
-          nodeB.vx -= fx;
-          nodeB.vy -= fy;
+          nodeA.vx += (dx / dist) * springForce;
+          nodeA.vy += (dy / dist) * springForce;
+          nodeB.vx -= (dx / dist) * springForce;
+          nodeB.vy -= (dy / dist) * springForce;
         }
       }
     }
 
+    // Velocity Damping & Bounds
     agents.forEach(a => {
       const node = this.cloudNodes.get(a.id);
       if (!node) return;
-      const dx = centerX - node.x;
-      const dy = centerY - node.y;
-      node.vx += dx * 0.002;
-      node.vy += dy * 0.002;
 
-      node.vx *= 0.85;
-      node.vy *= 0.85;
+      node.vx *= 0.82;
+      node.vy *= 0.82;
 
       node.x += node.vx;
       node.y += node.vy;
 
-      node.x = Math.max(60, Math.min(w - 60, node.x));
-      node.y = Math.max(60, Math.min(h - 60, node.y));
+      node.x = Math.max(50, Math.min(w - 50, node.x));
+      node.y = Math.max(50, Math.min(h - 50, node.y));
     });
   }
 
@@ -465,7 +560,7 @@ var WorldVisualizer = class WorldVisualizer {
   }
 
   drawAcademyView(ctx, w, h) {
-    // Safely get top affinity pairs via internal fallback
+    // Safely get top affinity pairs
     const pairs = this.getTopAffinityPairs(15);
 
     pairs.forEach(p => {
@@ -671,46 +766,46 @@ var WorldVisualizer = class WorldVisualizer {
     ctx.restore();
   }
 
+  // Radial Concentric Social Network View (Centralized Hub Node + Orbits)
   drawCloudNetworkView(ctx, w, h) {
     if (!this.engine || !this.engine.agents) return;
     const agents = this.engine.agents;
+    const centerX = w / 2;
+    const centerY = h / 2;
 
-    const centralityMap = new Map();
-    let maxCentrality = 1;
+    const topHubId = this.centralHubId || agents[0].id;
+    const centralAgent = this.engine.agentMap.get(topHubId) || agents[0];
 
-    const matrix = this.engine.affinityMatrix || {};
-
-    agents.forEach(agent => {
-      let totalAff = 0;
-      agents.forEach(other => {
-        if (other.id !== agent.id) {
-          totalAff += (matrix[agent.id] && matrix[agent.id][other.id]) || 1.0;
-        }
-      });
-      centralityMap.set(agent.id, totalAff);
-      if (totalAff > maxCentrality) maxCentrality = totalAff;
+    // 1. Draw Radial Orbit Concentric Rings around the Central Hub Node
+    ctx.save();
+    [165, 275, 375].forEach((radius, idx) => {
+      ctx.strokeStyle = idx === 0 ? 'rgba(0, 243, 255, 0.15)' : 'rgba(255, 255, 255, 0.05)';
+      ctx.lineWidth = idx === 0 ? 1.5 : 1;
+      ctx.setLineDash(idx === 0 ? [6, 6] : [4, 4]);
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      ctx.stroke();
     });
+    ctx.restore();
 
-    const sortedHubs = [...agents].sort((a, b) => centralityMap.get(b.id) - centralityMap.get(a.id));
-    const topHubIds = new Set(sortedHubs.slice(0, 4).map(h => h.id));
+    // 2. Draw Central Hub Glowing Nebula Halo
+    const hubNode = this.cloudNodes.get(topHubId);
+    if (hubNode) {
+      ctx.save();
+      const grad = ctx.createRadialGradient(hubNode.x, hubNode.y, 10, hubNode.x, hubNode.y, 140);
+      grad.addColorStop(0, 'rgba(0, 243, 255, 0.35)');
+      grad.addColorStop(0.5, 'rgba(168, 85, 247, 0.15)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(hubNode.x, hubNode.y, 140, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
 
-    topHubIds.forEach(id => {
-      const node = this.cloudNodes.get(id);
-      if (node) {
-        ctx.save();
-        const grad = ctx.createRadialGradient(node.x, node.y, 10, node.x, node.y, 110);
-        grad.addColorStop(0, 'rgba(0, 243, 255, 0.18)');
-        grad.addColorStop(0.5, 'rgba(168, 85, 247, 0.08)');
-        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, 110, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      }
-    });
-
+    // 3. Draw Connection Lines and Numerical Conversation Count Badges
     const countMatrix = this.engine.conversationCountMatrix || {};
+    const affMatrix = this.engine.affinityMatrix || {};
 
     for (let i = 0; i < agents.length; i++) {
       const a = agents[i];
@@ -721,17 +816,17 @@ var WorldVisualizer = class WorldVisualizer {
         const nodeB = this.cloudNodes.get(b.id);
         if (!nodeB) continue;
 
-        const affA = (matrix[a.id] && matrix[a.id][b.id]) || 1.0;
-        const affB = (matrix[b.id] && matrix[b.id][a.id]) || 1.0;
-        const aff = (affA + affB) / 2;
         const chats = (countMatrix[a.id] && countMatrix[a.id][b.id]) || 0;
+        const affA = (affMatrix[a.id] && affMatrix[a.id][b.id]) || 1.0;
+        const affB = (affMatrix[b.id] && affMatrix[b.id][a.id]) || 1.0;
+        const aff = (affA + affB) / 2;
 
-        if (aff > 1.1 || chats > 0) {
+        if (chats > 0 || aff > 1.25) {
           ctx.save();
-          const isHubLink = topHubIds.has(a.id) || topHubIds.has(b.id);
-          ctx.strokeStyle = isHubLink ? (aff > 2.2 ? '#00f3ff' : '#a855f7') : 'rgba(255, 255, 255, 0.12)';
-          ctx.lineWidth = Math.min(6, Math.max(0.6, (aff - 1) * 2.2));
-          ctx.globalAlpha = Math.min(0.85, (aff - 1) * 0.45);
+          const isCentralLink = a.id === topHubId || b.id === topHubId;
+          ctx.strokeStyle = isCentralLink ? (chats > 2 ? '#00f3ff' : '#a855f7') : 'rgba(255, 255, 255, 0.12)';
+          ctx.lineWidth = isCentralLink ? Math.min(6, Math.max(1.5, chats * 1.2)) : Math.min(3, Math.max(0.6, (aff - 1) * 1.5));
+          ctx.globalAlpha = isCentralLink ? 0.85 : Math.min(0.5, (aff - 1) * 0.3);
 
           ctx.beginPath();
           ctx.moveTo(nodeA.x, nodeA.y);
@@ -744,8 +839,8 @@ var WorldVisualizer = class WorldVisualizer {
             const midY = (nodeA.y + nodeB.y) / 2;
 
             ctx.save();
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-            ctx.strokeStyle = '#00f3ff';
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+            ctx.strokeStyle = isCentralLink ? '#00f3ff' : 'rgba(0, 243, 255, 0.5)';
             ctx.lineWidth = 1;
 
             const badgeText = `${chats} chats`;
@@ -768,32 +863,32 @@ var WorldVisualizer = class WorldVisualizer {
       }
     }
 
+    // 4. Draw Radial Network Nodes
     agents.forEach(agent => {
       const node = this.cloudNodes.get(agent.id);
       if (!node) return;
 
-      const centRatio = (centralityMap.get(agent.id) / maxCentrality);
-      const isTopHub = topHubIds.has(agent.id);
-      const nodeRadius = 16 + (centRatio * 16);
+      const isCentralHub = agent.id === topHubId;
+      const nodeRadius = isCentralHub ? 28 : 20;
       const badge = this.getAgentShortBadge(agent);
 
       ctx.save();
 
-      if (isTopHub) {
+      if (isCentralHub) {
         ctx.shadowColor = '#00f3ff';
-        ctx.shadowBlur = 20;
+        ctx.shadowBlur = 25;
         ctx.strokeStyle = '#00f3ff';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 3.5;
         ctx.beginPath();
         ctx.arc(node.x, node.y, nodeRadius + 6, 0, Math.PI * 2);
         ctx.stroke();
       }
 
       ctx.shadowColor = agent.color || '#00f3ff';
-      ctx.shadowBlur = isTopHub ? 16 : 8;
-      ctx.fillStyle = '#0f172a';
-      ctx.strokeStyle = isTopHub ? '#00f3ff' : (agent.color || '#00f3ff');
-      ctx.lineWidth = isTopHub ? 3 : 2;
+      ctx.shadowBlur = isCentralHub ? 20 : 8;
+      ctx.fillStyle = isCentralHub ? '#1e1b4b' : '#0f172a';
+      ctx.strokeStyle = isCentralHub ? '#00f3ff' : (agent.color || '#00f3ff');
+      ctx.lineWidth = isCentralHub ? 3 : 2;
 
       ctx.beginPath();
       ctx.arc(node.x, node.y, nodeRadius, 0, Math.PI * 2);
@@ -801,43 +896,44 @@ var WorldVisualizer = class WorldVisualizer {
       ctx.stroke();
 
       ctx.shadowBlur = 0;
-      ctx.fillStyle = isTopHub ? '#00f3ff' : '#ffffff';
+      ctx.fillStyle = isCentralHub ? '#00f3ff' : '#ffffff';
       ctx.font = `bold ${Math.floor(nodeRadius * 0.75)}px Inter, sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(badge, node.x, node.y);
 
-      if (isTopHub) {
+      if (isCentralHub) {
         ctx.fillStyle = '#00f3ff';
         ctx.font = 'bold 9px Inter, sans-serif';
-        ctx.fillText('🌟 HUB', node.x, node.y - nodeRadius - 8);
+        ctx.fillText('👑 PRIMARY HUB', node.x, node.y - nodeRadius - 10);
       }
 
-      ctx.font = isTopHub ? 'bold 11px Inter, sans-serif' : '10px Inter, sans-serif';
-      ctx.fillStyle = isTopHub ? '#00f3ff' : '#f8fafc';
+      ctx.font = isCentralHub ? 'bold 11px Inter, sans-serif' : '10px Inter, sans-serif';
+      ctx.fillStyle = isCentralHub ? '#00f3ff' : '#f8fafc';
       ctx.fillText(agent.name, node.x, node.y + nodeRadius + 14);
 
       ctx.restore();
     });
 
+    // HUD Header Legend
     ctx.save();
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-    ctx.strokeStyle = 'rgba(0, 243, 255, 0.3)';
-    ctx.lineWidth = 1;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    ctx.strokeStyle = 'rgba(0, 243, 255, 0.4)';
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    if (ctx.roundRect) ctx.roundRect(16, 16, 290, 72, 8);
-    else ctx.rect(16, 16, 290, 72);
+    if (ctx.roundRect) ctx.roundRect(16, 16, 320, 74, 8);
+    else ctx.rect(16, 16, 320, 74);
     ctx.fill();
     ctx.stroke();
 
     ctx.fillStyle = '#00f3ff';
     ctx.font = 'bold 11px Inter, sans-serif';
-    ctx.fillText('☁️ ORGANIC CLOUD CONSTELLATION NETWORK', 26, 34);
+    ctx.fillText(`👑 RADIAL SOCIAL NETWORK (PRIMARY HUB: ${centralAgent.name})`, 26, 34);
 
     ctx.fillStyle = '#cbd5e1';
     ctx.font = '10px Inter, sans-serif';
-    ctx.fillText('• 💬 Connection Badges = Numerical Conversation Count (10+ turns per chat)', 26, 50);
-    ctx.fillText('• Organic Spring Physics: High affinity agents cluster together', 26, 66);
+    ctx.fillText(`• Centered on node with MAX connections & chats (${centralAgent.icon} ${centralAgent.name})`, 26, 50);
+    ctx.fillText('• Concentric radial orbits extend to direct & extended network contacts', 26, 66);
     ctx.restore();
   }
 };
