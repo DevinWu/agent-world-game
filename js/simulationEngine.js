@@ -1,7 +1,8 @@
 /**
  * Simulation Engine for Agent World Game.
  * Manages 25 Agent states, Dynamic Affinity Matrix, Conversation Session Tracker (10+ turns per chat),
- * Numerical Connection Matrix, Worldview Mutation, Export functionality, and Bilingual (EN/ZH) Data.
+ * Dialectical Debate & Resistance Check, Worldview Mutation with Rationale ("Why Changed"),
+ * Export functionality, and Bilingual (EN/ZH) Data.
  */
 
 var SimulationEngine = class SimulationEngine {
@@ -228,19 +229,32 @@ var SimulationEngine = class SimulationEngine {
         if (targetAgent && session.sessionData.mutatedBeliefIndex >= 0) {
           targetAgent.mutationsCount++;
           targetAgent.top10Understandings[session.sessionData.mutatedBeliefIndex] = session.sessionData.newBelief;
-          targetAgent.top10UnderstandingsZh[session.sessionData.mutatedBeliefIndex] = session.sessionData.newBelief;
+          targetAgent.top10UnderstandingsZh[session.sessionData.mutatedBeliefIndex] = session.sessionData.newBeliefZh;
+
+          const sourceAgent = session.sessionData.targetAgentId === session.agentA.id ? session.agentB : session.agentA;
 
           const mutationRecord = {
+            id: 'mut_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
             turn: this.turns,
             agentId: targetAgent.id,
             agentName: targetAgent.name,
+            agentNameZh: targetAgent.nameZh || targetAgent.name,
             agentIcon: targetAgent.icon,
             agentColor: targetAgent.color,
+            agentTitle: targetAgent.title,
+            agentTitleZh: targetAgent.titleZh || targetAgent.title,
             index: session.sessionData.mutatedBeliefIndex + 1,
             oldBelief: session.sessionData.oldBelief,
+            oldBeliefZh: session.sessionData.oldBeliefZh,
             newBelief: session.sessionData.newBelief,
-            inspiredByName: session.sessionData.targetAgentId === session.agentA.id ? session.agentB.name : session.agentA.name,
-            inspirationScore: session.sessionData.avgInspiration
+            newBeliefZh: session.sessionData.newBeliefZh,
+            mutationReason: session.sessionData.mutationReason,
+            mutationReasonZh: session.sessionData.mutationReasonZh,
+            inspiredByName: sourceAgent.name,
+            inspiredByNameZh: sourceAgent.nameZh || sourceAgent.name,
+            inspiredByIcon: sourceAgent.icon,
+            inspirationScore: session.sessionData.avgInspiration,
+            resistanceThreshold: session.sessionData.resistanceThreshold
           };
 
           this.beliefMutations.unshift(mutationRecord);
@@ -348,6 +362,7 @@ var SimulationEngine = class SimulationEngine {
           authorIcon: m.agentIcon,
           inspiredBy: m.inspiredByName,
           inspirationScore: m.inspirationScore,
+          reasonWhyChanged: m.mutationReason,
           understandingIndex: m.index
         })),
         agentsFinalBeliefs: this.agents.map(a => ({
@@ -377,7 +392,8 @@ var SimulationEngine = class SimulationEngine {
     topEmergent.forEach((m, idx) => {
       md += `### ${idx + 1}. Synthesized by ${m.agentIcon} ${m.agentName} (Inspired by ${m.inspiredByName})\n`;
       md += `> "${m.newBelief}"\n`;
-      md += `- **Inspiration Score**: ${m.inspirationScore}/100 | **Understanding Index**: #${m.index}\n\n`;
+      md += `- **Why Changed**: ${m.mutationReason}\n`;
+      md += `- **Inspiration Score**: ${m.inspirationScore}/100 | **Cognitive Resistance Defeated**: ${m.resistanceThreshold}/100\n\n`;
     });
 
     md += `---\n\n## 📚 FINAL TOP 10 WORLD UNDERSTANDINGS FOR ALL 25 AGENTS\n\n`;

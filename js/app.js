@@ -2,7 +2,7 @@
  * Main Application Controller for Agent World Game.
  * Connects UI elements, simulation engine events, canvas visualizer,
  * inspector modal, Worldviews Matrix tab, Cloud Constellation View, Standalone Evolution Stream Section,
- * Export System, and i18n Language Toggle safely.
+ * Mutation Inspector Modal, Export System, and i18n Language Toggle safely.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const feedList = document.getElementById('feed-list');
   const leaderboardList = document.getElementById('leaderboard-list');
 
-  // Modal Elements
+  // Modal Elements - Agent Inspector
   const agentModal = document.getElementById('agent-modal');
   const modalClose = document.getElementById('modal-close');
   const modalName = document.getElementById('modal-agent-name');
@@ -67,6 +67,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalBtnForceChat = document.getElementById('modal-btn-force-chat');
   const modalBtnInjectAnomaly = document.getElementById('modal-btn-inject-anomaly');
 
+  // Modal Elements - Mutation Inspector
+  const mutationModal = document.getElementById('mutation-modal');
+  const mutModalClose = document.getElementById('mutation-modal-close');
+  const mutModalAvatar = document.getElementById('mut-modal-avatar');
+  const mutModalAgentName = document.getElementById('mut-modal-agent-name');
+  const mutModalAgentTitle = document.getElementById('mut-modal-agent-title');
+  const mutModalTurn = document.getElementById('mut-modal-turn');
+  const mutModalInspiration = document.getElementById('mut-modal-inspiration');
+  const mutModalResistance = document.getElementById('mut-modal-resistance');
+  const mutModalOldBelief = document.getElementById('mut-modal-old-belief');
+  const mutModalNewBelief = document.getElementById('mut-modal-new-belief');
+  const mutModalInspiredBy = document.getElementById('mut-modal-inspired-by');
+  const mutModalReason = document.getElementById('mut-modal-reason');
+
+  // Epiphany Modal Elements
   const epiphanyModal = document.getElementById('epiphany-modal');
   const epiphanyTitle = document.getElementById('epiphany-title');
   const epiphanySubtitle = document.getElementById('epiphany-subtitle');
@@ -272,7 +287,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!query) return true;
       const agent = engine.agentMap.get(m.agentId);
       const name = isZh && agent ? (agent.nameZh || agent.name) : m.agentName;
-      return name.toLowerCase().includes(query) || m.newBelief.toLowerCase().includes(query) || m.oldBelief.toLowerCase().includes(query);
+      const oldBelief = isZh ? (m.oldBeliefZh || m.oldBelief) : m.oldBelief;
+      const newBelief = isZh ? (m.newBeliefZh || m.newBelief) : m.newBelief;
+      return name.toLowerCase().includes(query) || newBelief.toLowerCase().includes(query) || oldBelief.toLowerCase().includes(query);
     });
 
     if (filtered.length === 0) {
@@ -283,24 +300,66 @@ document.addEventListener('DOMContentLoaded', () => {
     filtered.forEach(m => {
       const agent = engine.agentMap.get(m.agentId);
       const name = isZh && agent ? (agent.nameZh || agent.name) : m.agentName;
+      const inspiredName = isZh ? (m.inspiredByNameZh || m.inspiredByName) : m.inspiredByName;
+
+      const oldBelief = isZh ? (m.oldBeliefZh || m.oldBelief) : m.oldBelief;
+      const newBelief = isZh ? (m.newBeliefZh || m.newBelief) : m.newBelief;
 
       const card = document.createElement('div');
       card.className = 'mutation-card';
+      card.style.cursor = 'pointer';
       card.innerHTML = `
         <div class="mutation-card-header">
           <span class="mutation-card-agent" style="color: ${m.agentColor};">${m.agentIcon} ${name}</span>
           <span style="color: #a855f7; font-weight: 800;">Turn #${m.turn} • #${m.index} Mutated</span>
         </div>
         <div class="mutation-card-diff">
-          <del>${I18nManager.t('wasBelief')} "${m.oldBelief}"</del><br>
-          <ins style="color: #00f3ff; font-weight: 600;">${I18nManager.t('nowBelief')} "${m.newBelief}"</ins>
+          <del>${I18nManager.t('wasBelief')} "${oldBelief.slice(0, 45)}..."</del><br>
+          <ins style="color: #00f3ff; font-weight: 600;">${I18nManager.t('nowBelief')} "${newBelief.slice(0, 50)}..."</ins>
         </div>
-        <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 8px; display: flex; justify-content: space-between;">
-          <span>${I18nManager.t('inspiredBy')} <strong>${m.inspiredByName}</strong></span>
-          <span style="color: #00f3ff; font-weight: 700;">Score: ${m.inspirationScore}/100 ⚡</span>
+        <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 8px; display: flex; justify-content: space-between; align-items: center;">
+          <span>${I18nManager.t('inspiredBy')} <strong>${inspiredName}</strong></span>
+          <span style="color: #00f3ff; font-weight: 700; background: rgba(0,243,255,0.12); padding: 2px 6px; border-radius: 4px;">Inspect Details 🔍</span>
         </div>
       `;
+
+      card.addEventListener('click', () => openMutationModal(m));
       mutationContainer.appendChild(card);
+    });
+  }
+
+  function openMutationModal(m) {
+    const isZh = I18nManager.currentLang === 'zh';
+    const agent = engine.agentMap.get(m.agentId);
+
+    const name = isZh && agent ? (agent.nameZh || agent.name) : m.agentName;
+    const title = isZh && agent ? (agent.titleZh || agent.title) : (m.agentTitle || '');
+    const inspiredName = isZh ? (m.inspiredByNameZh || m.inspiredByName) : m.inspiredByName;
+    const oldBelief = isZh ? (m.oldBeliefZh || m.oldBelief) : m.oldBelief;
+    const newBelief = isZh ? (m.newBeliefZh || m.newBelief) : m.newBelief;
+    const reason = isZh ? (m.mutationReasonZh || m.mutationReason) : m.mutationReason;
+
+    mutModalAvatar.textContent = m.agentIcon || '⚡';
+    mutModalAvatar.style.borderColor = m.agentColor || '#00f3ff';
+    mutModalAgentName.textContent = name;
+    mutModalAgentTitle.textContent = title;
+    mutModalTurn.textContent = `Turn #${m.turn}`;
+    mutModalInspiration.textContent = `${m.inspirationScore} / 100 ⚡`;
+    mutModalResistance.textContent = `${m.resistanceThreshold || 75} / 100 🛡️`;
+    mutModalOldBelief.textContent = `"${oldBelief}"`;
+    mutModalNewBelief.textContent = `"${newBelief}"`;
+    mutModalInspiredBy.textContent = `${I18nManager.t('inspiredBy')} ${m.inspiredByIcon || ''} ${inspiredName}`;
+    mutModalReason.textContent = reason;
+
+    mutationModal.classList.add('active');
+  }
+
+  if (mutModalClose) {
+    mutModalClose.addEventListener('click', () => mutationModal.classList.remove('active'));
+  }
+  if (mutationModal) {
+    mutationModal.addEventListener('click', (e) => {
+      if (e.target === mutationModal) mutationModal.classList.remove('active');
     });
   }
 
@@ -378,6 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
     statMutations.textContent = '0';
     statAwareness.textContent = '0%';
     epiphanyModal.classList.remove('active');
+    mutationModal.classList.remove('active');
     updateLeaderboard();
     if (currentActiveTab === 'worldviews') {
       renderWorldviewsMatrix();
@@ -542,6 +602,7 @@ document.addEventListener('DOMContentLoaded', () => {
       epiphanyEmergentList.innerHTML = `<div style="color: #64748b; font-size: 0.8rem; padding: 10px;">No belief mutations occurred during this short run.</div>`;
     } else {
       topEmergent.forEach((m, idx) => {
+        const isZh = I18nManager.currentLang === 'zh';
         const item = document.createElement('div');
         item.style.background = 'rgba(30, 41, 59, 0.6)';
         item.style.border = '1px solid rgba(0, 243, 255, 0.2)';
@@ -550,17 +611,25 @@ document.addEventListener('DOMContentLoaded', () => {
         item.style.fontSize = '0.8rem';
         item.style.lineHeight = '1.4';
 
+        const name = isZh ? (m.agentNameZh || m.agentName) : m.agentName;
+        const inspiredName = isZh ? (m.inspiredByNameZh || m.inspiredByName) : m.inspiredByName;
+        const newBelief = isZh ? (m.newBeliefZh || m.newBelief) : m.newBelief;
+        const reason = isZh ? (m.mutationReasonZh || m.mutationReason) : m.mutationReason;
+
         item.innerHTML = `
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
             <div style="font-weight: 700; color: ${m.agentColor};">
-              #${idx + 1} • ${m.agentIcon} <strong>${m.agentName}</strong> (Understanding #${m.index})
+              #${idx + 1} • ${m.agentIcon} <strong>${name}</strong> (Understanding #${m.index})
             </div>
             <span style="font-size: 0.7rem; background: rgba(0, 243, 255, 0.15); color: #00f3ff; padding: 2px 6px; border-radius: 4px; font-weight: 700;">
-              Inspired by ${m.inspiredByName} (${m.inspirationScore}/100)
+              Inspired by ${inspiredName} (${m.inspirationScore}/100)
             </span>
           </div>
-          <div style="color: #f8fafc; font-style: italic;">
-            "${m.newBelief}"
+          <div style="color: #f8fafc; font-style: italic; margin-bottom: 4px;">
+            "${newBelief}"
+          </div>
+          <div style="color: #94a3b8; font-size: 0.72rem;">
+            💡 <strong>Why Changed</strong>: ${reason}
           </div>
         `;
         epiphanyEmergentList.appendChild(item);
