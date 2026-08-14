@@ -425,8 +425,11 @@ var WorldVisualizer = class WorldVisualizer {
   }
 
   drawAcademyView(ctx, w, h) {
-    // Affinity Links
-    const pairs = this.engine.getTopAffinityPairs(15);
+    // Affinity Links (Safely fetch top affinity pairs)
+    const pairs = (this.engine && typeof this.engine.getTopAffinityPairs === 'function') 
+      ? this.engine.getTopAffinityPairs(15) 
+      : [];
+
     pairs.forEach(p => {
       if (p.affinity > 1.2 && p.agentA && p.agentB) {
         ctx.save();
@@ -534,7 +537,7 @@ var WorldVisualizer = class WorldVisualizer {
         ctx.stroke();
       }
 
-      // HIGH-CONTRAST CROSS-PLATFORM INITIALS BADGE TEXT (100% Guaranteed Display!)
+      // HIGH-CONTRAST INITIALS BADGE TEXT
       ctx.shadowBlur = 0;
       ctx.fillStyle = isConversing ? '#00f3ff' : '#ffffff';
       ctx.font = isConversing ? 'bold 11px Inter, sans-serif' : 'bold 10px Inter, sans-serif';

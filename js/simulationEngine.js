@@ -122,6 +122,29 @@ var SimulationEngine = class SimulationEngine {
     }
   }
 
+  getTopAffinityPairs(limit = 15) {
+    const pairs = [];
+    const agents = this.agents;
+    if (!agents || agents.length < 2) return [];
+
+    for (let i = 0; i < agents.length; i++) {
+      for (let j = i + 1; j < agents.length; j++) {
+        const idA = agents[i].id;
+        const idB = agents[j].id;
+        const affA = (this.affinityMatrix[idA] && this.affinityMatrix[idA][idB]) || 1.0;
+        const affB = (this.affinityMatrix[idB] && this.affinityMatrix[idB][idA]) || 1.0;
+        const aff = (affA + affB) / 2;
+
+        pairs.push({
+          agentA: agents[i],
+          agentB: agents[j],
+          affinity: aff
+        });
+      }
+    }
+    return pairs.sort((a, b) => b.affinity - a.affinity).slice(0, limit);
+  }
+
   selectPartner(agentA) {
     const candidateIds = this.agents.filter(a => a.id !== agentA.id).map(a => a.id);
     const weights = candidateIds.map(idB => {
