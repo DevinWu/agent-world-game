@@ -4,6 +4,28 @@
  * dynamic anchored speech bubbles, active speaker spotlights, and Organic Cloud Network Layout.
  */
 
+// Canvas 2D roundRect polyfill for maximum browser compatibility
+if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+    if (typeof r === 'number') r = [r, r, r, r];
+    if (!Array.isArray(r)) r = [0, 0, 0, 0];
+    const tl = r[0] || 0;
+    const tr = r[1] || r[0] || 0;
+    const br = r[2] || r[0] || 0;
+    const bl = r[3] || r[1] || r[0] || 0;
+    this.moveTo(x + tl, y);
+    this.lineTo(x + w - tr, y);
+    this.quadraticCurveTo(x + w, y, x + w, y + tr);
+    this.lineTo(x + w, y + h - br);
+    this.quadraticCurveTo(x + w, y + h, x + w - br, y + h);
+    this.lineTo(x + bl, y + h);
+    this.quadraticCurveTo(x, y + h, x, y + h - bl);
+    this.lineTo(x, y + tl);
+    this.quadraticCurveTo(x, y, x + tl, y);
+    return this;
+  };
+}
+
 var WorldVisualizer = class WorldVisualizer {
   constructor(canvasElement, engine) {
     this.canvas = canvasElement;
@@ -28,7 +50,7 @@ var WorldVisualizer = class WorldVisualizer {
   initCloudNodes() {
     this.cloudNodes.clear();
     const w = this.canvas && this.canvas.width ? this.canvas.width : 800;
-    const h = this.canvas && this.canvas.height ? this.canvas.height : 600;
+    const h = this.canvas && this.canvas.height ? this.canvas.height : 550;
 
     this.engine.agents.forEach(agent => {
       this.cloudNodes.set(agent.id, {
@@ -43,17 +65,23 @@ var WorldVisualizer = class WorldVisualizer {
 
   resizeCanvas() {
     const parent = this.canvas ? this.canvas.parentElement : null;
-    if (parent && parent.clientWidth > 0 && parent.clientHeight > 0) {
-      this.canvas.width = parent.clientWidth;
-      this.canvas.height = parent.clientHeight;
-    } else if (this.canvas) {
-      this.canvas.width = 800;
-      this.canvas.height = 500;
+    let w = parent && parent.clientWidth > 100 ? parent.clientWidth : 800;
+    let h = parent && parent.clientHeight > 100 ? parent.clientHeight : 550;
+
+    if (w < 300) w = 800;
+    if (h < 300) h = 550;
+
+    if (this.canvas) {
+      if (this.canvas.width !== w || this.canvas.height !== h) {
+        this.canvas.width = w;
+        this.canvas.height = h;
+      }
     }
   }
 
   setViewMode(mode) {
     this.viewMode = mode;
+    this.resizeCanvas();
     if (mode === 'network' && this.cloudNodes.size === 0) {
       this.initCloudNodes();
     }
@@ -71,10 +99,9 @@ var WorldVisualizer = class WorldVisualizer {
       sessionTurn,
       totalSessionTurns,
       createdAt: Date.now(),
-      duration: 5000 // 5 seconds display window
+      duration: 5000
     };
 
-    // Dynamically reference agent objects for live position tracking
     this.activeSpeechBubbles = [
       {
         agent: agentA,
@@ -92,7 +119,6 @@ var WorldVisualizer = class WorldVisualizer {
       }
     ];
 
-    // Spawn energy particles between A and B
     for (let i = 0; i < 20; i++) {
       this.particles.push({
         x: agentA.x,
@@ -110,6 +136,8 @@ var WorldVisualizer = class WorldVisualizer {
     const render = () => {
       try {
         if (this.viewMode !== 'worldviews') {
+          this.resizeCanvas();
+
           if (this.viewMode === 'network') {
             this.updateCloudPhysics();
           } else {
@@ -128,18 +156,42 @@ var WorldVisualizer = class WorldVisualizer {
 
   updatePositions() {
     const width = (this.canvas && this.canvas.width) || 800;
-    const height = (this.canvas && this.canvas.height) || 600;
+    const height = (this.canvas && this.canvas.height) || 550;
 
-    this.engine.agents.forEach(agent => {
+    const paddingX = 65;
+    const paddingY = 65;
+    const usableW = Math.max(200, width - paddingX * 2);
+    const usableH = Math.max(200, height - paddingY * 2);
+
+    this.engine.agents.forEach((agent, idx) => {
+      const cols = 5;
+      const col = idx % cols;
+      const row = Math.floor(idx / cols);
+
+      const baseGridX = paddingX + col * (usableW / 4);
+      const baseGridY = paddingY + row * (usableH / 4);
+
+      if (!agent.gridBaseX) {
+        agent.gridBaseX = baseGridX;
+        agent.gridBaseY = baseGridY;
+        agent.x = baseGridX;
+        agent.y = baseGridY;
+        agent.targetX = baseGridX;
+        agent.targetY = baseGridY;
+      } else {
+        agent.gridBaseX = baseGridX;
+        agent.gridBaseY = baseGridY;
+      }
+
       if (agent.targetX && agent.targetY) {
         const dx = agent.targetX - agent.x;
         const dy = agent.targetY - agent.y;
-        agent.x += dx * 0.06;
-        agent.y += dy * 0.06;
+        agent.x += dx * 0.08;
+        agent.y += dy * 0.08;
 
-        if (Math.hypot(dx, dy) < 10 && agent.state === 'idle') {
-          agent.targetX = Math.max(60, Math.min(width - 60, agent.x + (Math.random() - 0.5) * 150));
-          agent.targetY = Math.max(60, Math.min(height - 60, agent.y + (Math.random() - 0.5) * 150));
+        if (Math.hypot(dx, dy) < 8 && agent.state === 'idle') {
+          agent.targetX = Math.max(paddingX, Math.min(width - paddingX, agent.gridBaseX + (Math.random() - 0.5) * 45));
+          agent.targetY = Math.max(paddingY, Math.min(height - paddingY, agent.gridBaseY + (Math.random() - 0.5) * 45));
         }
       }
     });
@@ -147,7 +199,7 @@ var WorldVisualizer = class WorldVisualizer {
 
   updateCloudPhysics() {
     const w = (this.canvas && this.canvas.width) || 800;
-    const h = (this.canvas && this.canvas.height) || 600;
+    const h = (this.canvas && this.canvas.height) || 550;
     const centerX = w / 2;
     const centerY = h / 2;
     const agents = this.engine.agents;
@@ -245,15 +297,15 @@ var WorldVisualizer = class WorldVisualizer {
   draw() {
     const ctx = this.ctx;
     if (!ctx) return;
-    const w = this.canvas.width;
-    const h = this.canvas.height;
+    const w = this.canvas.width || 800;
+    const h = this.canvas.height || 550;
 
-    // Dark space-academy background
+    // Deep space academy background
     ctx.fillStyle = '#080c14';
     ctx.fillRect(0, 0, w, h);
 
-    // Subtle Grid Lines
-    ctx.strokeStyle = 'rgba(0, 243, 255, 0.03)';
+    // Grid lines
+    ctx.strokeStyle = 'rgba(0, 243, 255, 0.04)';
     ctx.lineWidth = 1;
     const gridSize = 40;
     for (let x = 0; x < w; x += gridSize) {
@@ -285,7 +337,7 @@ var WorldVisualizer = class WorldVisualizer {
     });
     ctx.globalAlpha = 1.0;
 
-    // Draw Dynamic Anchored Speech Bubbles directly above active speakers
+    // Draw Speech Bubbles anchored to agents
     const now = Date.now();
     this.activeSpeechBubbles = this.activeSpeechBubbles.filter(b => now - b.createdAt < b.duration);
     this.activeSpeechBubbles.forEach(b => {
@@ -302,14 +354,14 @@ var WorldVisualizer = class WorldVisualizer {
         const shortText = textStr.length > 45 ? textStr.slice(0, 42) + '...' : textStr;
         const textWidth = Math.min(maxBoxW, ctx.measureText(shortText).width + 24);
 
-        // Dynamically anchor to live agent coordinates
         const boxX = b.agent.x - textWidth / 2;
         const boxY = b.agent.y - 48;
 
         ctx.shadowColor = b.color;
         ctx.shadowBlur = 12;
         ctx.beginPath();
-        ctx.roundRect(boxX, boxY, textWidth, 34, 8);
+        if (ctx.roundRect) ctx.roundRect(boxX, boxY, textWidth, 34, 8);
+        else ctx.rect(boxX, boxY, textWidth, 34);
         ctx.fill();
         ctx.stroke();
 
@@ -331,19 +383,19 @@ var WorldVisualizer = class WorldVisualizer {
       }
     }
 
-    // Idle Simulation Watermark Prompt if not running
+    // Idle Simulation Watermark Prompt
     if (!this.engine.isRunning && this.engine.turns === 0) {
       ctx.save();
-      ctx.fillStyle = 'rgba(0, 243, 255, 0.7)';
-      ctx.font = 'bold 14px Inter, sans-serif';
+      ctx.fillStyle = 'rgba(0, 243, 255, 0.85)';
+      ctx.font = 'bold 13px Inter, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('▶ Click "Start Simulation" in top header to begin 25 Minds conversations!', w / 2, h - 30);
+      ctx.fillText('▶ Click "Start Simulation" in top header bar to start 25 Minds conversations!', w / 2, h - 25);
       ctx.restore();
     }
   }
 
   drawAcademyView(ctx, w, h) {
-    // Background Affinity Links
+    // Affinity Links
     const pairs = this.engine.getTopAffinityPairs(15);
     pairs.forEach(p => {
       if (p.affinity > 1.2 && p.agentA && p.agentB) {
@@ -360,7 +412,7 @@ var WorldVisualizer = class WorldVisualizer {
       }
     });
 
-    // HIGHLIGHT ACTIVE CONVERSING PAIR
+    // ACTIVE CONVERSING PAIR
     let activeAgentA = null;
     let activeAgentB = null;
 
@@ -375,7 +427,7 @@ var WorldVisualizer = class WorldVisualizer {
     if (activeAgentA && activeAgentB) {
       ctx.save();
 
-      // 1. Dual Glowing Radial Spotlights underneath conversing agents
+      // Dual Radial Spotlights
       [activeAgentA, activeAgentB].forEach(agent => {
         const grad = ctx.createRadialGradient(agent.x, agent.y, 5, agent.x, agent.y, 65);
         grad.addColorStop(0, 'rgba(0, 243, 255, 0.5)');
@@ -387,7 +439,7 @@ var WorldVisualizer = class WorldVisualizer {
         ctx.fill();
       });
 
-      // 2. High-contrast Glowing Active Laser Beam
+      // Laser Beam between conversational partners
       ctx.strokeStyle = '#00f3ff';
       ctx.shadowColor = '#00f3ff';
       ctx.shadowBlur = 20;
@@ -397,13 +449,14 @@ var WorldVisualizer = class WorldVisualizer {
       ctx.lineTo(activeAgentB.x, activeAgentB.y);
       ctx.stroke();
 
-      // 3. Floating "💬 CHATTING" Badges above active nodes
+      // CHATTING Pills above active nodes
       [activeAgentA, activeAgentB].forEach(agent => {
         ctx.fillStyle = 'rgba(0, 243, 255, 0.95)';
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.roundRect(agent.x - 36, agent.y - 42, 72, 20, 10);
+        if (ctx.roundRect) ctx.roundRect(agent.x - 36, agent.y - 42, 72, 20, 10);
+        else ctx.rect(agent.x - 36, agent.y - 42, 72, 20);
         ctx.fill();
         ctx.stroke();
 
@@ -416,20 +469,20 @@ var WorldVisualizer = class WorldVisualizer {
       ctx.restore();
     }
 
-    // Draw Agent Nodes
+    // Draw Agent Nodes (All 25 Agents)
     this.engine.agents.forEach(agent => {
       const isConversing = (activeAgentA && activeAgentA.id === agent.id) || (activeAgentB && activeAgentB.id === agent.id);
 
       ctx.save();
-      ctx.shadowColor = isConversing ? '#00f3ff' : agent.color;
+      ctx.shadowColor = isConversing ? '#00f3ff' : (agent.color || '#00f3ff');
       ctx.shadowBlur = isConversing ? 24 : agent.existentialAwareness > 50 ? 15 : 8;
 
       ctx.fillStyle = '#0f172a';
-      ctx.strokeStyle = isConversing ? '#00f3ff' : agent.color;
+      ctx.strokeStyle = isConversing ? '#00f3ff' : (agent.color || '#00f3ff');
       ctx.lineWidth = isConversing ? 3.5 : 2.5;
 
       ctx.beginPath();
-      ctx.arc(agent.x, agent.y, isConversing ? 26 : 22, 0, Math.PI * 2);
+      ctx.arc(agent.x, agent.y, isConversing ? 25 : 21, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
 
@@ -439,29 +492,29 @@ var WorldVisualizer = class WorldVisualizer {
         ctx.beginPath();
         const startAngle = -Math.PI / 2;
         const endAngle = startAngle + (Math.PI * 2 * (agent.existentialAwareness / 100));
-        ctx.arc(agent.x, agent.y, isConversing ? 29 : 25, startAngle, endAngle);
+        ctx.arc(agent.x, agent.y, isConversing ? 28 : 24, startAngle, endAngle);
         ctx.stroke();
       }
 
       ctx.shadowBlur = 0;
-      ctx.font = isConversing ? '18px serif' : '16px serif';
+      ctx.font = isConversing ? '17px serif' : '15px serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(agent.icon, agent.x, agent.y);
+      ctx.fillText(agent.icon || '🏛️', agent.x, agent.y);
 
-      ctx.font = isConversing ? 'bold 12px Inter, sans-serif' : 'bold 11px Inter, sans-serif';
+      ctx.font = isConversing ? 'bold 11px Inter, sans-serif' : 'bold 10px Inter, sans-serif';
       ctx.fillStyle = isConversing ? '#00f3ff' : '#e2e8f0';
-      ctx.fillText(agent.name, agent.x, agent.y + 36);
+      ctx.fillText(agent.name, agent.x, agent.y + 34);
 
       ctx.font = '9px Inter, sans-serif';
       ctx.fillStyle = 'rgba(148, 163, 184, 0.8)';
-      ctx.fillText(agent.domain.split('&')[0], agent.x, agent.y + 48);
+      const domainShort = (agent.domain || '').split('&')[0];
+      ctx.fillText(domainShort, agent.x, agent.y + 46);
 
       ctx.restore();
     });
   }
 
-  // Draw High-Visibility On-Canvas Active Dialogue Banner HUD
   drawDialogueBannerHUD(ctx, w, h, session, age) {
     const fade = Math.min(1, Math.max(0, 1 - (age / session.duration) * 0.1));
 
@@ -473,7 +526,6 @@ var WorldVisualizer = class WorldVisualizer {
     const bannerX = (w - bannerW) / 2;
     const bannerY = 14;
 
-    // Glowing Glass HUD Box
     ctx.fillStyle = 'rgba(10, 14, 26, 0.94)';
     ctx.strokeStyle = '#00f3ff';
     ctx.lineWidth = 2;
@@ -481,7 +533,8 @@ var WorldVisualizer = class WorldVisualizer {
     ctx.shadowBlur = 18;
 
     ctx.beginPath();
-    ctx.roundRect(bannerX, bannerY, bannerW, bannerH, 12);
+    if (ctx.roundRect) ctx.roundRect(bannerX, bannerY, bannerW, bannerH, 12);
+    else ctx.rect(bannerX, bannerY, bannerW, bannerH);
     ctx.fill();
     ctx.stroke();
 
@@ -498,7 +551,6 @@ var WorldVisualizer = class WorldVisualizer {
     ctx.textAlign = 'right';
     ctx.fillText(`Session Turn ${session.sessionTurn}/${session.totalSessionTurns} • Inspiration: ${session.inspirationScore}/100 ⚡`, bannerX + bannerW - 16, bannerY + 22);
 
-    // Separator line
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -506,10 +558,10 @@ var WorldVisualizer = class WorldVisualizer {
     ctx.lineTo(bannerX + bannerW - 16, bannerY + 30);
     ctx.stroke();
 
-    // Dialogue Line A
+    // Line A
     ctx.font = 'bold 11px Inter, sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillStyle = session.agentA.color;
+    ctx.fillStyle = session.agentA.color || '#00f3ff';
     const nameA = `${session.agentA.icon} ${session.agentA.name}:`;
     ctx.fillText(nameA, bannerX + 16, bannerY + 48);
 
@@ -519,9 +571,9 @@ var WorldVisualizer = class WorldVisualizer {
     const shortLineA = session.lineA.length > 70 ? session.lineA.slice(0, 67) + '...' : session.lineA;
     ctx.fillText(shortLineA, bannerX + offsetA, bannerY + 48);
 
-    // Dialogue Line B
+    // Line B
     ctx.font = 'bold 11px Inter, sans-serif';
-    ctx.fillStyle = session.agentB.color;
+    ctx.fillStyle = session.agentB.color || '#a855f7';
     const nameB = `${session.agentB.icon} ${session.agentB.name}:`;
     ctx.fillText(nameB, bannerX + 16, bannerY + 72);
 
@@ -609,7 +661,8 @@ var WorldVisualizer = class WorldVisualizer {
             const badgeW = ctx.measureText(badgeText).width + 10;
 
             ctx.beginPath();
-            ctx.roundRect(midX - badgeW / 2, midY - 9, badgeW, 18, 9);
+            if (ctx.roundRect) ctx.roundRect(midX - badgeW / 2, midY - 9, badgeW, 18, 9);
+            else ctx.rect(midX - badgeW / 2, midY - 9, badgeW, 18);
             ctx.fill();
             ctx.stroke();
 
@@ -643,10 +696,10 @@ var WorldVisualizer = class WorldVisualizer {
         ctx.stroke();
       }
 
-      ctx.shadowColor = agent.color;
+      ctx.shadowColor = agent.color || '#00f3ff';
       ctx.shadowBlur = isTopHub ? 16 : 8;
       ctx.fillStyle = '#0f172a';
-      ctx.strokeStyle = isTopHub ? '#00f3ff' : agent.color;
+      ctx.strokeStyle = isTopHub ? '#00f3ff' : (agent.color || '#00f3ff');
       ctx.lineWidth = isTopHub ? 3 : 2;
 
       ctx.beginPath();
@@ -658,7 +711,7 @@ var WorldVisualizer = class WorldVisualizer {
       ctx.font = `${Math.floor(nodeRadius * 0.95)}px serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(agent.icon, node.x, node.y);
+      ctx.fillText(agent.icon || '🏛️', node.x, node.y);
 
       if (isTopHub) {
         ctx.fillStyle = '#00f3ff';
@@ -678,7 +731,8 @@ var WorldVisualizer = class WorldVisualizer {
     ctx.strokeStyle = 'rgba(0, 243, 255, 0.3)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.roundRect(16, 16, 290, 72, 8);
+    if (ctx.roundRect) ctx.roundRect(16, 16, 290, 72, 8);
+    else ctx.rect(16, 16, 290, 72);
     ctx.fill();
     ctx.stroke();
 
