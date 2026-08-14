@@ -46,28 +46,40 @@ var SimulationEngine = class SimulationEngine {
 
     const sourceData = (typeof window !== 'undefined' && window.INITIAL_AGENTS_DATA) ? window.INITIAL_AGENTS_DATA : INITIAL_AGENTS_DATA;
 
-    this.agents = sourceData.map(d => ({
-      id: d.id,
-      name: d.name,
-      title: d.title,
-      era: d.era,
-      domain: d.domain,
-      color: d.color,
-      icon: d.icon,
-      baseTraits: [...d.baseTraits],
-      top10Understandings: [...d.initialUnderstandings],
-      initialUnderstandings: [...d.initialUnderstandings],
-      existentialAwareness: 0,
-      totalDialogues: 0,
-      mutationsCount: 0,
-      topInspiringPartnerId: null,
-      glitchesObserved: [],
-      x: Math.random() * 700 + 50,
-      y: Math.random() * 500 + 50,
-      targetX: Math.random() * 700 + 50,
-      targetY: Math.random() * 500 + 50,
-      state: 'idle'
-    }));
+    const w = typeof window !== 'undefined' && window.innerWidth ? Math.min(800, window.innerWidth * 0.6) : 700;
+    const h = typeof window !== 'undefined' && window.innerHeight ? Math.min(500, window.innerHeight * 0.5) : 450;
+
+    // Evenly distribute 25 agents across a 5x5 grid in 2D Academy World
+    this.agents = sourceData.map((d, idx) => {
+      const cols = 5;
+      const col = idx % cols;
+      const row = Math.floor(idx / cols);
+      const startX = 70 + col * ((w - 140) / 4);
+      const startY = 70 + row * ((h - 140) / 4);
+
+      return {
+        id: d.id,
+        name: d.name,
+        title: d.title,
+        era: d.era,
+        domain: d.domain,
+        color: d.color || '#00f3ff',
+        icon: d.icon || '🏛️',
+        baseTraits: [...d.baseTraits],
+        top10Understandings: [...d.initialUnderstandings],
+        initialUnderstandings: [...d.initialUnderstandings],
+        existentialAwareness: 0,
+        totalDialogues: 0,
+        mutationsCount: 0,
+        topInspiringPartnerId: null,
+        glitchesObserved: [],
+        x: startX,
+        y: startY,
+        targetX: startX + (Math.random() - 0.5) * 60,
+        targetY: startY + (Math.random() - 0.5) * 60,
+        state: 'idle'
+      };
+    });
 
     this.agentMap.clear();
     this.agents.forEach(a => this.agentMap.set(a.id, a));
@@ -166,9 +178,9 @@ var SimulationEngine = class SimulationEngine {
 
     const midX = (session.agentA.x + session.agentB.x) / 2;
     const midY = (session.agentA.y + session.agentB.y) / 2;
-    session.agentA.targetX = midX - 30;
+    session.agentA.targetX = midX - 35;
     session.agentA.targetY = midY;
-    session.agentB.targetX = midX + 30;
+    session.agentB.targetX = midX + 35;
     session.agentB.targetY = midY;
 
     session.currentTurnIdx++;
