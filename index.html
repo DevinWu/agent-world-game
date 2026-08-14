@@ -214,22 +214,22 @@
 
       <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px;">
         <div class="stat-pill" style="flex-direction: column;">
-          <span>Turn Event</span>
+          <span id="mut-modal-turn-title">Turn Event</span>
           <strong id="mut-modal-turn" style="font-size: 0.95rem; color: #00f3ff;">Turn #0</strong>
         </div>
         <div class="stat-pill" style="flex-direction: column;">
-          <span>Inspiration Score</span>
+          <span id="mut-modal-inspiration-title">Inspiration Score</span>
           <strong id="mut-modal-inspiration" style="font-size: 0.95rem; color: #a855f7;">92 / 100 ⚡</strong>
         </div>
         <div class="stat-pill" style="flex-direction: column;">
-          <span>Resistance Defeated</span>
+          <span id="mut-modal-resistance-title">Resistance Defeated</span>
           <strong id="mut-modal-resistance" style="font-size: 0.95rem; color: #10b981;">75 / 100 🛡️</strong>
         </div>
       </div>
 
       <!-- Original Belief (Was) -->
       <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; padding: 12px; margin-bottom: 12px;">
-        <div style="font-size: 0.75rem; font-weight: 800; color: #ef4444; text-transform: uppercase; margin-bottom: 4px;">
+        <div id="mut-modal-was-title" style="font-size: 0.75rem; font-weight: 800; color: #ef4444; text-transform: uppercase; margin-bottom: 4px;">
           ❌ Original Belief (Before Mutation)
         </div>
         <div id="mut-modal-old-belief" style="color: #cbd5e1; font-size: 0.85rem; font-style: italic; line-height: 1.4;">
@@ -239,7 +239,7 @@
 
       <!-- Evolved Belief (Now) -->
       <div style="background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 10px; padding: 12px; margin-bottom: 12px;">
-        <div style="font-size: 0.75rem; font-weight: 800; color: #a855f7; text-transform: uppercase; margin-bottom: 4px;">
+        <div id="mut-modal-now-title" style="font-size: 0.75rem; font-weight: 800; color: #a855f7; text-transform: uppercase; margin-bottom: 4px;">
           ⚡ Evolved Synthesized Belief (New Understanding)
         </div>
         <div id="mut-modal-new-belief" style="color: #ffffff; font-size: 0.88rem; font-weight: 600; line-height: 1.4;">
@@ -250,7 +250,7 @@
       <!-- Dialectical Rationale & Debate Catalyst (Why Changed) -->
       <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(0, 243, 255, 0.3); border-radius: 10px; padding: 14px;">
         <div style="font-size: 0.78rem; font-weight: 800; color: #00f3ff; text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
-          <span>💡 Dialectical Debate Catalyst & Why Changed (思想转变深刻原因分析)</span>
+          <span id="mut-modal-reason-title">💡 Dialectical Debate Catalyst & Why Changed</span>
           <span id="mut-modal-inspired-by" style="font-size: 0.76rem; color: #a855f7; font-weight: 700; cursor: pointer; text-decoration: underline; background: rgba(168,85,247,0.18); padding: 4px 10px; border-radius: 6px;" title="Click to inspect partner profile">Inspired by Partner 🔍</span>
         </div>
         <div id="mut-modal-reason" style="color: #e2e8f0; font-size: 0.82rem; line-height: 1.5;">
@@ -323,12 +323,12 @@
   </button>
 
   <!-- Application Scripts with i18n & Cache Buster -->
-  <script src="js/i18n.js?v=1.4.0"></script>
-  <script src="js/agentsData.js?v=1.4.0"></script>
-  <script src="js/dialogueSynthesizer.js?v=1.4.0"></script>
-  <script src="js/simulationEngine.js?v=1.4.0"></script>
-  <script src="js/worldVisualizer.js?v=1.4.0"></script>
-  <script src="js/audioEffects.js?v=1.4.0"></script>
-  <script src="js/app.js?v=1.4.0"></script>
+  <script src="js/i18n.js?v=1.4.5"></script>
+  <script src="js/agentsData.js?v=1.4.5"></script>
+  <script src="js/dialogueSynthesizer.js?v=1.4.5"></script>
+  <script src="js/simulationEngine.js?v=1.4.5"></script>
+  <script src="js/worldVisualizer.js?v=1.4.5"></script>
+  <script src="js/audioEffects.js?v=1.4.5"></script>
+  <script src="js/app.js?v=1.4.5"></script>
 </body>
 </html>

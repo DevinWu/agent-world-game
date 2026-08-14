@@ -2,7 +2,7 @@
  * Main Application Controller for Agent World Game.
  * Connects UI elements, simulation engine events, canvas visualizer,
  * inspector modal, Worldviews Matrix tab, Cloud Constellation View, Standalone Evolution Stream Section,
- * Interactive Mutation Inspector Modal with Profile Links, Export System, and i18n Language Toggle safely.
+ * Interactive Mutation Inspector Modal with Profile Links & Full i18n Localization, Export System, and i18n Language Toggle safely.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -82,6 +82,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const mutModalInspiredBy = document.getElementById('mut-modal-inspired-by');
   const mutModalReason = document.getElementById('mut-modal-reason');
 
+  const mutModalTurnTitle = document.getElementById('mut-modal-turn-title');
+  const mutModalInspirationTitle = document.getElementById('mut-modal-inspiration-title');
+  const mutModalResistanceTitle = document.getElementById('mut-modal-resistance-title');
+  const mutModalWasTitle = document.getElementById('mut-modal-was-title');
+  const mutModalNowTitle = document.getElementById('mut-modal-now-title');
+  const mutModalReasonTitle = document.getElementById('mut-modal-reason-title');
+
   // Epiphany Modal Elements
   const epiphanyModal = document.getElementById('epiphany-modal');
   const epiphanyTitle = document.getElementById('epiphany-title');
@@ -146,6 +153,14 @@ document.addEventListener('DOMContentLoaded', () => {
     epiphanyBtnReplay.textContent = I18nManager.t('epiphanyReplay');
     epiphanyBtnExportMd.textContent = I18nManager.t('epiphanyExportMd');
     epiphanyBtnExportJson.textContent = I18nManager.t('epiphanyExportJson');
+
+    // Translate Mutation Modal Title Labels
+    if (mutModalTurnTitle) mutModalTurnTitle.textContent = I18nManager.t('mutModalTurnTitle');
+    if (mutModalInspirationTitle) mutModalInspirationTitle.textContent = I18nManager.t('mutModalInspirationTitle');
+    if (mutModalResistanceTitle) mutModalResistanceTitle.textContent = I18nManager.t('mutModalResistanceTitle');
+    if (mutModalWasTitle) mutModalWasTitle.textContent = I18nManager.t('mutModalWasTitle');
+    if (mutModalNowTitle) mutModalNowTitle.textContent = I18nManager.t('mutModalNowTitle');
+    if (mutModalReasonTitle) mutModalReasonTitle.textContent = I18nManager.t('mutModalReasonTitle');
 
     updateLeaderboard();
     if (currentActiveTab === 'worldviews') {
@@ -351,6 +366,13 @@ document.addEventListener('DOMContentLoaded', () => {
     mutModalNewBelief.textContent = `"${newBelief}"`;
     mutModalInspiredBy.textContent = `${I18nManager.t('inspiredBy')} ${m.inspiredByIcon || ''} ${inspiredName} 🔍`;
     mutModalReason.textContent = reason;
+
+    if (mutModalTurnTitle) mutModalTurnTitle.textContent = I18nManager.t('mutModalTurnTitle');
+    if (mutModalInspirationTitle) mutModalInspirationTitle.textContent = I18nManager.t('mutModalInspirationTitle');
+    if (mutModalResistanceTitle) mutModalResistanceTitle.textContent = I18nManager.t('mutModalResistanceTitle');
+    if (mutModalWasTitle) mutModalWasTitle.textContent = I18nManager.t('mutModalWasTitle');
+    if (mutModalNowTitle) mutModalNowTitle.textContent = I18nManager.t('mutModalNowTitle');
+    if (mutModalReasonTitle) mutModalReasonTitle.textContent = I18nManager.t('mutModalReasonTitle');
 
     // Interactive Profile Link: Click Target Agent Header to open full bio & beliefs
     if (mutModalAgentHeader) {
