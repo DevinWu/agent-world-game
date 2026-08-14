@@ -1,7 +1,7 @@
 /**
  * World Visualizer for Agent World Game.
  * Renders 2D Canvas Roaming Academy World with high-visibility Active Dialogue HUDs,
- * dynamic anchored speech bubbles, active speaker spotlights, and Organic Cloud Network Layout.
+ * dynamic anchored speech bubbles, active speaker spotlights, cross-platform vector node avatars, and Organic Cloud Network Layout.
  */
 
 // Canvas 2D roundRect polyfill for maximum browser compatibility
@@ -58,7 +58,7 @@ var WorldVisualizer = class WorldVisualizer {
         y: h / 2 + (Math.random() - 0.5) * (h * 0.6),
         vx: 0,
         vy: 0,
-        radius: 20
+        radius: 22
       });
     });
   }
@@ -85,6 +85,36 @@ var WorldVisualizer = class WorldVisualizer {
     if (mode === 'network' && this.cloudNodes.size === 0) {
       this.initCloudNodes();
     }
+  }
+
+  getAgentShortBadge(agent) {
+    if (!agent || !agent.name) return 'AG';
+    const nameMap = {
+      'Socrates': 'SOC',
+      'Albert Einstein': 'EIN',
+      'Alan Turing': 'TUR',
+      'Ada Lovelace': 'ADA',
+      'Siddhartha Gautama (Buddha)': 'BUD',
+      'Nikola Tesla': 'TES',
+      'René Descartes': 'DES',
+      'Elon Musk': 'MUSK',
+      'Isaac Newton': 'NEW',
+      'Confucius': 'CONF',
+      'Leonardo da Vinci': 'LEO',
+      'Steve Jobs': 'JOBS',
+      'Marie Curie': 'CUR',
+      'Charles Darwin': 'DAR',
+      'Friedrich Nietzsche': 'NIE',
+      'Galileo Galilei': 'GAL',
+      'Abraham Lincoln': 'LINC',
+      'Mahatma Gandhi': 'GAN',
+      'Laozi': 'LAO',
+      'Karl Marx': 'MARX',
+      'J. Robert Oppenheimer': 'OPP',
+      'William Shakespeare': 'WILL',
+      'Hypatia of Alexandria': 'HYP'
+    };
+    return nameMap[agent.name] || agent.name.slice(0, 3).toUpperCase();
   }
 
   addSpeechBubble(agentA, agentB, lines, inspirationScore, sessionTurn = 1, totalSessionTurns = 12) {
@@ -346,7 +376,7 @@ var WorldVisualizer = class WorldVisualizer {
         ctx.save();
         ctx.globalAlpha = Math.min(1, Math.max(0, 1 - (age / b.duration) * 0.15));
         ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
-        ctx.strokeStyle = b.color;
+        ctx.strokeStyle = b.color || '#00f3ff';
         ctx.lineWidth = 2;
 
         const maxBoxW = 260;
@@ -355,9 +385,9 @@ var WorldVisualizer = class WorldVisualizer {
         const textWidth = Math.min(maxBoxW, ctx.measureText(shortText).width + 24);
 
         const boxX = b.agent.x - textWidth / 2;
-        const boxY = b.agent.y - 48;
+        const boxY = b.agent.y - 52;
 
-        ctx.shadowColor = b.color;
+        ctx.shadowColor = b.color || '#00f3ff';
         ctx.shadowBlur = 12;
         ctx.beginPath();
         if (ctx.roundRect) ctx.roundRect(boxX, boxY, textWidth, 34, 8);
@@ -400,7 +430,7 @@ var WorldVisualizer = class WorldVisualizer {
     pairs.forEach(p => {
       if (p.affinity > 1.2 && p.agentA && p.agentB) {
         ctx.save();
-        ctx.strokeStyle = p.agentA.color;
+        ctx.strokeStyle = p.agentA.color || '#00f3ff';
         ctx.lineWidth = Math.min(3, Math.max(0.5, (p.affinity - 1) * 1.8));
         ctx.globalAlpha = Math.min(0.4, (p.affinity - 1) * 0.25);
         ctx.setLineDash([4, 4]);
@@ -455,15 +485,15 @@ var WorldVisualizer = class WorldVisualizer {
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
-        if (ctx.roundRect) ctx.roundRect(agent.x - 36, agent.y - 42, 72, 20, 10);
-        else ctx.rect(agent.x - 36, agent.y - 42, 72, 20);
+        if (ctx.roundRect) ctx.roundRect(agent.x - 36, agent.y - 44, 72, 20, 10);
+        else ctx.rect(agent.x - 36, agent.y - 44, 72, 20);
         ctx.fill();
         ctx.stroke();
 
         ctx.fillStyle = '#000000';
         ctx.font = 'bold 9px Inter, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('💬 CHATTING', agent.x, agent.y - 28);
+        ctx.fillText('💬 CHATTING', agent.x, agent.y - 30);
       });
 
       ctx.restore();
@@ -472,44 +502,56 @@ var WorldVisualizer = class WorldVisualizer {
     // Draw Agent Nodes (All 25 Agents)
     this.engine.agents.forEach(agent => {
       const isConversing = (activeAgentA && activeAgentA.id === agent.id) || (activeAgentB && activeAgentB.id === agent.id);
+      const color = agent.color || '#00f3ff';
+      const badge = this.getAgentShortBadge(agent);
 
       ctx.save();
-      ctx.shadowColor = isConversing ? '#00f3ff' : (agent.color || '#00f3ff');
-      ctx.shadowBlur = isConversing ? 24 : agent.existentialAwareness > 50 ? 15 : 8;
+      ctx.shadowColor = isConversing ? '#00f3ff' : color;
+      ctx.shadowBlur = isConversing ? 24 : agent.existentialAwareness > 50 ? 15 : 10;
 
-      ctx.fillStyle = '#0f172a';
-      ctx.strokeStyle = isConversing ? '#00f3ff' : (agent.color || '#00f3ff');
+      // Circle Fill with Dark Gradient
+      const radius = isConversing ? 25 : 22;
+      const grad = ctx.createRadialGradient(agent.x - 5, agent.y - 5, 2, agent.x, agent.y, radius);
+      grad.addColorStop(0, '#1e293b');
+      grad.addColorStop(1, '#0f172a');
+      ctx.fillStyle = grad;
+      ctx.strokeStyle = isConversing ? '#00f3ff' : color;
       ctx.lineWidth = isConversing ? 3.5 : 2.5;
 
       ctx.beginPath();
-      ctx.arc(agent.x, agent.y, isConversing ? 25 : 21, 0, Math.PI * 2);
+      ctx.arc(agent.x, agent.y, radius, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
 
+      // Existential Awareness Progress Outer Ring
       if (agent.existentialAwareness > 0) {
         ctx.strokeStyle = agent.existentialAwareness > 70 ? '#ff00ff' : '#00f3ff';
         ctx.lineWidth = 3;
         ctx.beginPath();
         const startAngle = -Math.PI / 2;
         const endAngle = startAngle + (Math.PI * 2 * (agent.existentialAwareness / 100));
-        ctx.arc(agent.x, agent.y, isConversing ? 28 : 24, startAngle, endAngle);
+        ctx.arc(agent.x, agent.y, radius + 3, startAngle, endAngle);
         ctx.stroke();
       }
 
+      // HIGH-CONTRAST CROSS-PLATFORM INITIALS BADGE TEXT (100% Guaranteed Display!)
       ctx.shadowBlur = 0;
-      ctx.font = isConversing ? '17px serif' : '15px serif';
+      ctx.fillStyle = isConversing ? '#00f3ff' : '#ffffff';
+      ctx.font = isConversing ? 'bold 11px Inter, sans-serif' : 'bold 10px Inter, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(agent.icon || '🏛️', agent.x, agent.y);
+      ctx.fillText(badge, agent.x, agent.y);
 
+      // Name Label Below Node
       ctx.font = isConversing ? 'bold 11px Inter, sans-serif' : 'bold 10px Inter, sans-serif';
       ctx.fillStyle = isConversing ? '#00f3ff' : '#e2e8f0';
-      ctx.fillText(agent.name, agent.x, agent.y + 34);
+      ctx.fillText(agent.name, agent.x, agent.y + 36);
 
+      // Domain Badge
       ctx.font = '9px Inter, sans-serif';
-      ctx.fillStyle = 'rgba(148, 163, 184, 0.8)';
+      ctx.fillStyle = 'rgba(148, 163, 184, 0.85)';
       const domainShort = (agent.domain || '').split('&')[0];
-      ctx.fillText(domainShort, agent.x, agent.y + 46);
+      ctx.fillText(domainShort, agent.x, agent.y + 48);
 
       ctx.restore();
     });
@@ -683,6 +725,7 @@ var WorldVisualizer = class WorldVisualizer {
       const centRatio = (centralityMap.get(agent.id) / maxCentrality);
       const isTopHub = topHubIds.has(agent.id);
       const nodeRadius = 16 + (centRatio * 16);
+      const badge = this.getAgentShortBadge(agent);
 
       ctx.save();
 
@@ -708,10 +751,11 @@ var WorldVisualizer = class WorldVisualizer {
       ctx.stroke();
 
       ctx.shadowBlur = 0;
-      ctx.font = `${Math.floor(nodeRadius * 0.95)}px serif`;
+      ctx.fillStyle = isTopHub ? '#00f3ff' : '#ffffff';
+      ctx.font = `bold ${Math.floor(nodeRadius * 0.75)}px Inter, sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(agent.icon || '🏛️', node.x, node.y);
+      ctx.fillText(badge, node.x, node.y);
 
       if (isTopHub) {
         ctx.fillStyle = '#00f3ff';
