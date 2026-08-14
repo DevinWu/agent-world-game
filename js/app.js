@@ -1,7 +1,8 @@
 /**
  * Main Application Controller for Agent World Game.
  * Connects UI elements, simulation engine events, canvas visualizer,
- * inspector modal, Worldviews Matrix tab, Cloud Constellation View, Export System, and i18n Language Toggle safely.
+ * inspector modal, Worldviews Matrix tab, Cloud Constellation View, Standalone Evolution Stream Section,
+ * Export System, and i18n Language Toggle safely.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -34,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabAcademy = document.getElementById('tab-academy');
   const tabNetwork = document.getElementById('tab-network');
   const tabWorldviews = document.getElementById('tab-worldviews');
+  const tabStream = document.getElementById('tab-stream');
   const viewInstruction = document.getElementById('view-instruction');
 
   const canvasWrapper = document.getElementById('canvas-wrapper');
@@ -42,8 +44,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const worldviewsSearch = document.getElementById('worldviews-search');
   const worldviewsDomainFilter = document.getElementById('worldviews-domain-filter');
 
+  const streamContainer = document.getElementById('stream-container');
+  const streamSearch = document.getElementById('stream-search');
+  const mutationStreamTitle = document.getElementById('mutation-stream-title');
   const mutationContainer = document.getElementById('mutation-cards-container');
   const mutationBadge = document.getElementById('mutation-count-badge');
+
   const feedList = document.getElementById('feed-list');
   const leaderboardList = document.getElementById('leaderboard-list');
 
@@ -100,12 +106,16 @@ document.addEventListener('DOMContentLoaded', () => {
     tabAcademy.textContent = I18nManager.t('tabAcademy');
     tabNetwork.textContent = I18nManager.t('tabNetwork');
     tabWorldviews.textContent = I18nManager.t('tabWorldviews');
+    if (tabStream) tabStream.textContent = I18nManager.t('tabStream');
 
     if (currentActiveTab === 'academy') viewInstruction.textContent = I18nManager.t('instructionAcademy');
     else if (currentActiveTab === 'network') viewInstruction.textContent = I18nManager.t('instructionNetwork');
     else if (currentActiveTab === 'worldviews') viewInstruction.textContent = I18nManager.t('instructionWorldviews');
+    else if (currentActiveTab === 'stream') viewInstruction.textContent = I18nManager.t('instructionStream');
 
     worldviewsSearch.placeholder = I18nManager.t('searchPlaceholder');
+    if (streamSearch) streamSearch.placeholder = I18nManager.t('searchStreamPlaceholder');
+    if (mutationStreamTitle) mutationStreamTitle.textContent = I18nManager.t('mutationHeader');
 
     // Update Domain Select Options
     const opt0 = worldviewsDomainFilter.options[0]; if (opt0) opt0.textContent = I18nManager.t('domainAll');
@@ -124,6 +134,8 @@ document.addEventListener('DOMContentLoaded', () => {
     updateLeaderboard();
     if (currentActiveTab === 'worldviews') {
       renderWorldviewsMatrix();
+    } else if (currentActiveTab === 'stream') {
+      renderMutationStreamCards();
     }
   }
 
@@ -245,6 +257,57 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function renderMutationStreamCards() {
+    mutationContainer.innerHTML = '';
+    const isZh = I18nManager.currentLang === 'zh';
+    const query = (streamSearch ? streamSearch.value : '').toLowerCase();
+
+    const mutations = engine.beliefMutations;
+    if (mutations.length === 0) {
+      mutationContainer.innerHTML = `<div style="color: #64748b; font-size: 0.85rem; padding: 20px; text-align: center; grid-column: 1 / -1;">${I18nManager.t('mutationEmpty')}</div>`;
+      return;
+    }
+
+    const filtered = mutations.filter(m => {
+      if (!query) return true;
+      const agent = engine.agentMap.get(m.agentId);
+      const name = isZh && agent ? (agent.nameZh || agent.name) : m.agentName;
+      return name.toLowerCase().includes(query) || m.newBelief.toLowerCase().includes(query) || m.oldBelief.toLowerCase().includes(query);
+    });
+
+    if (filtered.length === 0) {
+      mutationContainer.innerHTML = `<div style="color: #64748b; font-size: 0.85rem; padding: 20px; text-align: center; grid-column: 1 / -1;">No mutation events found matching "${query}".</div>`;
+      return;
+    }
+
+    filtered.forEach(m => {
+      const agent = engine.agentMap.get(m.agentId);
+      const name = isZh && agent ? (agent.nameZh || agent.name) : m.agentName;
+
+      const card = document.createElement('div');
+      card.className = 'mutation-card';
+      card.innerHTML = `
+        <div class="mutation-card-header">
+          <span class="mutation-card-agent" style="color: ${m.agentColor};">${m.agentIcon} ${name}</span>
+          <span style="color: #a855f7; font-weight: 800;">Turn #${m.turn} • #${m.index} Mutated</span>
+        </div>
+        <div class="mutation-card-diff">
+          <del>${I18nManager.t('wasBelief')} "${m.oldBelief}"</del><br>
+          <ins style="color: #00f3ff; font-weight: 600;">${I18nManager.t('nowBelief')} "${m.newBelief}"</ins>
+        </div>
+        <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 8px; display: flex; justify-content: space-between;">
+          <span>${I18nManager.t('inspiredBy')} <strong>${m.inspiredByName}</strong></span>
+          <span style="color: #00f3ff; font-weight: 700;">Score: ${m.inspirationScore}/100 ⚡</span>
+        </div>
+      `;
+      mutationContainer.appendChild(card);
+    });
+  }
+
+  if (streamSearch) {
+    streamSearch.addEventListener('input', renderMutationStreamCards);
+  }
+
   function startSimulation() {
     if (engine.winnerAgent) {
       console.log("Game already finished via Epiphany. Click Reset to run a new simulation.");
@@ -310,7 +373,6 @@ document.addEventListener('DOMContentLoaded', () => {
     pauseSimulation();
     engine.init();
     feedList.innerHTML = '';
-    mutationContainer.innerHTML = `<div style="color: #64748b; font-size: 0.8rem; padding: 10px;">${I18nManager.t('mutationEmpty')}</div>`;
     mutationBadge.textContent = `0 ${I18nManager.t('mutationEvents')}`;
     statTurns.textContent = '0';
     statMutations.textContent = '0';
@@ -319,6 +381,8 @@ document.addEventListener('DOMContentLoaded', () => {
     updateLeaderboard();
     if (currentActiveTab === 'worldviews') {
       renderWorldviewsMatrix();
+    } else if (currentActiveTab === 'stream') {
+      renderMutationStreamCards();
     }
   });
 
@@ -342,8 +406,10 @@ document.addEventListener('DOMContentLoaded', () => {
     tabAcademy.classList.add('active');
     tabNetwork.classList.remove('active');
     tabWorldviews.classList.remove('active');
+    if (tabStream) tabStream.classList.remove('active');
     canvasWrapper.style.display = 'block';
     worldviewsContainer.style.display = 'none';
+    streamContainer.style.display = 'none';
     viewInstruction.textContent = I18nManager.t('instructionAcademy');
     visualizer.setViewMode('academy');
   });
@@ -353,8 +419,10 @@ document.addEventListener('DOMContentLoaded', () => {
     tabNetwork.classList.add('active');
     tabAcademy.classList.remove('active');
     tabWorldviews.classList.remove('active');
+    if (tabStream) tabStream.classList.remove('active');
     canvasWrapper.style.display = 'block';
     worldviewsContainer.style.display = 'none';
+    streamContainer.style.display = 'none';
     viewInstruction.textContent = I18nManager.t('instructionNetwork');
     visualizer.setViewMode('network');
   });
@@ -364,12 +432,30 @@ document.addEventListener('DOMContentLoaded', () => {
     tabWorldviews.classList.add('active');
     tabAcademy.classList.remove('active');
     tabNetwork.classList.remove('active');
+    if (tabStream) tabStream.classList.remove('active');
     canvasWrapper.style.display = 'none';
     worldviewsContainer.style.display = 'flex';
+    streamContainer.style.display = 'none';
     viewInstruction.textContent = I18nManager.t('instructionWorldviews');
     visualizer.setViewMode('worldviews');
     renderWorldviewsMatrix();
   });
+
+  if (tabStream) {
+    tabStream.addEventListener('click', () => {
+      currentActiveTab = 'stream';
+      tabStream.classList.add('active');
+      tabAcademy.classList.remove('active');
+      tabNetwork.classList.remove('active');
+      tabWorldviews.classList.remove('active');
+      canvasWrapper.style.display = 'none';
+      worldviewsContainer.style.display = 'none';
+      streamContainer.style.display = 'flex';
+      viewInstruction.textContent = I18nManager.t('instructionStream');
+      visualizer.setViewMode('stream');
+      renderMutationStreamCards();
+    });
+  }
 
   worldviewsSearch.addEventListener('input', renderWorldviewsMatrix);
   worldviewsDomainFilter.addEventListener('change', renderWorldviewsMatrix);
@@ -422,34 +508,14 @@ document.addEventListener('DOMContentLoaded', () => {
     mutationBadge.textContent = `${engine.beliefMutations.length} ${I18nManager.t('mutationEvents')}`;
     SoundEngine.playBeliefMutationSound();
 
-    if (mutationContainer.children[0]?.style?.color === 'rgb(100, 116, 139)') {
-      mutationContainer.innerHTML = '';
-    }
-
-    const card = document.createElement('div');
-    card.className = 'mutation-card';
-    card.innerHTML = `
-      <div class="mutation-card-header">
-        <span class="mutation-card-agent" style="color: ${m.agentColor};">${m.agentIcon} ${m.agentName}</span>
-        <span style="color: #a855f7; font-weight: 700;">#${m.index} Mutated</span>
-      </div>
-      <div class="mutation-card-diff">
-        <del>${I18nManager.t('wasBelief')} "${m.oldBelief.slice(0, 45)}..."</del><br>
-        <ins>${I18nManager.t('nowBelief')} "${m.newBelief.slice(0, 50)}..."</ins>
-      </div>
-      <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 4px;">
-        ${I18nManager.t('inspiredBy')} <strong>${m.inspiredByName}</strong> (Score: ${m.inspirationScore})
-      </div>
-    `;
-
-    mutationContainer.insertBefore(card, mutationContainer.firstChild);
-
     if (selectedAgentId === m.agentId) {
       openAgentModal(m.agentId);
     }
 
     if (currentActiveTab === 'worldviews') {
       renderWorldviewsMatrix();
+    } else if (currentActiveTab === 'stream') {
+      renderMutationStreamCards();
     }
   });
 
