@@ -2,7 +2,7 @@
  * World Visualizer for Agent World Game.
  * Renders 2D Canvas Roaming Academy World with high-visibility Active Dialogue HUDs,
  * dynamic anchored speech bubbles, active speaker spotlights, cross-platform vector node avatars,
- * and Concentric Radial Social Network Cloud View (Centering the top-connected mind).
+ * Concentric Radial Social Network Cloud View, and Bilingual (EN/ZH) rendering.
  */
 
 // Canvas 2D roundRect polyfill for maximum browser compatibility
@@ -265,7 +265,6 @@ var WorldVisualizer = class WorldVisualizer {
     });
   }
 
-  // Concentric Radial Social Network Physics (Centering top-connected node)
   updateCloudPhysics() {
     const w = (this.canvas && this.canvas.width) || 800;
     const h = (this.canvas && this.canvas.height) || 550;
@@ -278,7 +277,6 @@ var WorldVisualizer = class WorldVisualizer {
     const countMatrix = this.engine.conversationCountMatrix || {};
     const affMatrix = this.engine.affinityMatrix || {};
 
-    // 1. Calculate Social Network Importance (Chats + Connections + Affinity)
     let maxSocialScore = -1;
     let topCentralId = agents[0].id;
 
@@ -308,8 +306,7 @@ var WorldVisualizer = class WorldVisualizer {
 
     this.centralHubId = topCentralId;
 
-    // 2. Classify Nodes into Radial Hierarchy Tiers from Central Hub
-    const tiers = new Map(); // id -> tier (0: Center, 1: Direct Partner, 2: Extended Friend, 3: Outer)
+    const tiers = new Map();
     const directPartners = new Set();
 
     agents.forEach(a => {
@@ -326,7 +323,6 @@ var WorldVisualizer = class WorldVisualizer {
       }
     });
 
-    // Check tier 2 vs tier 3 based on connections to tier 1
     agents.forEach(a => {
       if (tiers.get(a.id) === 2) {
         let isConnectedToTier1 = false;
@@ -341,7 +337,6 @@ var WorldVisualizer = class WorldVisualizer {
       }
     });
 
-    // 3. Apply Concentric Radial Forces
     agents.forEach(a => {
       if (!this.cloudNodes.has(a.id)) {
         this.cloudNodes.set(a.id, {
@@ -353,16 +348,12 @@ var WorldVisualizer = class WorldVisualizer {
       }
     });
 
-    // Tier 0 (Central Hub Node): Anchor directly to center of viewport
     const centerNode = this.cloudNodes.get(topCentralId);
     if (centerNode) {
       centerNode.vx += (centerX - centerNode.x) * 0.15;
       centerNode.vy += (centerY - centerNode.y) * 0.15;
     }
 
-    // Tier 1 Nodes (Direct Friends): Constrain to Radial Orbit Ring 1 (r ≈ 150-180px)
-    // Tier 2 Nodes (Extended): Constrain to Radial Orbit Ring 2 (r ≈ 260-300px)
-    // Tier 3 Nodes (Outer): Constrain to Radial Orbit Ring 3 (r ≈ 360-400px)
     agents.forEach((a, idx) => {
       const node = this.cloudNodes.get(a.id);
       if (!node || a.id === topCentralId) return;
@@ -374,13 +365,11 @@ var WorldVisualizer = class WorldVisualizer {
       const dy = node.y - centerY;
       const currentDist = Math.hypot(dx, dy) || 1;
 
-      // Radial ring spring force
       const radialForce = (currentDist - targetRadius) * 0.03;
       node.vx -= (dx / currentDist) * radialForce;
       node.vy -= (dy / currentDist) * radialForce;
     });
 
-    // Repulsion between adjacent nodes in radial view
     for (let i = 0; i < agents.length; i++) {
       const nodeA = this.cloudNodes.get(agents[i].id);
       if (!nodeA) continue;
@@ -405,7 +394,6 @@ var WorldVisualizer = class WorldVisualizer {
       }
     }
 
-    // Link spring attraction for conversing partners
     for (let i = 0; i < agents.length; i++) {
       const idA = agents[i].id;
       const nodeA = this.cloudNodes.get(idA);
@@ -431,7 +419,6 @@ var WorldVisualizer = class WorldVisualizer {
       }
     }
 
-    // Velocity Damping & Bounds
     agents.forEach(a => {
       const node = this.cloudNodes.get(a.id);
       if (!node) return;
@@ -550,18 +537,19 @@ var WorldVisualizer = class WorldVisualizer {
 
     // Idle Simulation Watermark Prompt
     if (this.engine && !this.engine.isRunning && this.engine.turns === 0) {
+      const promptText = (typeof window !== 'undefined' && window.I18nManager) ? window.I18nManager.t('watermarkPrompt') : '▶ Click "Start Simulation" in top header bar to start 25 Minds conversations!';
       ctx.save();
       ctx.fillStyle = 'rgba(0, 243, 255, 0.85)';
       ctx.font = 'bold 13px Inter, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('▶ Click "Start Simulation" in top header bar to start 25 Minds conversations!', w / 2, h - 25);
+      ctx.fillText(promptText, w / 2, h - 25);
       ctx.restore();
     }
   }
 
   drawAcademyView(ctx, w, h) {
-    // Safely get top affinity pairs
     const pairs = this.getTopAffinityPairs(15);
+    const isZh = (typeof window !== 'undefined' && window.I18nManager && window.I18nManager.currentLang === 'zh');
 
     pairs.forEach(p => {
       if (p.affinity > 1.2 && p.agentA && p.agentB) {
@@ -642,6 +630,8 @@ var WorldVisualizer = class WorldVisualizer {
       const isConversing = (activeAgentA && activeAgentA.id === agent.id) || (activeAgentB && activeAgentB.id === agent.id);
       const color = agent.color || '#00f3ff';
       const badge = this.getAgentShortBadge(agent);
+      const displayName = isZh ? (agent.nameZh || agent.name) : agent.name;
+      const displayDomain = isZh ? (agent.domainZh || agent.domain).split('&')[0] : (agent.domain || '').split('&')[0];
 
       ctx.save();
       ctx.shadowColor = isConversing ? '#00f3ff' : color;
@@ -683,13 +673,12 @@ var WorldVisualizer = class WorldVisualizer {
       // Name Label Below Node
       ctx.font = isConversing ? 'bold 11px Inter, sans-serif' : 'bold 10px Inter, sans-serif';
       ctx.fillStyle = isConversing ? '#00f3ff' : '#e2e8f0';
-      ctx.fillText(agent.name, agent.x, agent.y + 36);
+      ctx.fillText(displayName, agent.x, agent.y + 36);
 
       // Domain Badge
       ctx.font = '9px Inter, sans-serif';
       ctx.fillStyle = 'rgba(148, 163, 184, 0.85)';
-      const domainShort = (agent.domain || '').split('&')[0];
-      ctx.fillText(domainShort, agent.x, agent.y + 48);
+      ctx.fillText(displayDomain, agent.x, agent.y + 48);
 
       ctx.restore();
     });
@@ -697,6 +686,10 @@ var WorldVisualizer = class WorldVisualizer {
 
   drawDialogueBannerHUD(ctx, w, h, session, age) {
     const fade = Math.min(1, Math.max(0, 1 - (age / session.duration) * 0.1));
+    const isZh = (typeof window !== 'undefined' && window.I18nManager && window.I18nManager.currentLang === 'zh');
+
+    const nameA = isZh ? (session.agentA.nameZh || session.agentA.name) : session.agentA.name;
+    const nameB = isZh ? (session.agentB.nameZh || session.agentB.name) : session.agentB.name;
 
     ctx.save();
     ctx.globalAlpha = fade;
@@ -724,7 +717,7 @@ var WorldVisualizer = class WorldVisualizer {
     ctx.fillStyle = '#00f3ff';
     ctx.font = 'bold 12px Inter, sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText(`💬 ACTIVE DIALOGUE: ${session.agentA.icon} ${session.agentA.name} ↔ ${session.agentB.icon} ${session.agentB.name}`, bannerX + 16, bannerY + 22);
+    ctx.fillText(`💬 ACTIVE DIALOGUE: ${session.agentA.icon} ${nameA} ↔ ${session.agentB.icon} ${nameB}`, bannerX + 16, bannerY + 22);
 
     ctx.fillStyle = '#a855f7';
     ctx.font = 'bold 11px Inter, sans-serif';
@@ -742,10 +735,10 @@ var WorldVisualizer = class WorldVisualizer {
     ctx.font = 'bold 11px Inter, sans-serif';
     ctx.textAlign = 'left';
     ctx.fillStyle = session.agentA.color || '#00f3ff';
-    const nameA = `${session.agentA.icon} ${session.agentA.name}:`;
-    ctx.fillText(nameA, bannerX + 16, bannerY + 48);
+    const tagA = `${session.agentA.icon} ${nameA}:`;
+    ctx.fillText(tagA, bannerX + 16, bannerY + 48);
 
-    const offsetA = Math.max(160, ctx.measureText(nameA).width + 24);
+    const offsetA = Math.max(160, ctx.measureText(tagA).width + 24);
     ctx.font = '11px Inter, sans-serif';
     ctx.fillStyle = '#f8fafc';
     const shortLineA = session.lineA.length > 70 ? session.lineA.slice(0, 67) + '...' : session.lineA;
@@ -754,10 +747,10 @@ var WorldVisualizer = class WorldVisualizer {
     // Line B
     ctx.font = 'bold 11px Inter, sans-serif';
     ctx.fillStyle = session.agentB.color || '#a855f7';
-    const nameB = `${session.agentB.icon} ${session.agentB.name}:`;
-    ctx.fillText(nameB, bannerX + 16, bannerY + 72);
+    const tagB = `${session.agentB.icon} ${nameB}:`;
+    ctx.fillText(tagB, bannerX + 16, bannerY + 72);
 
-    const offsetB = Math.max(160, ctx.measureText(nameB).width + 24);
+    const offsetB = Math.max(160, ctx.measureText(tagB).width + 24);
     ctx.font = '11px Inter, sans-serif';
     ctx.fillStyle = '#cbd5e1';
     const shortLineB = session.lineB.length > 70 ? session.lineB.slice(0, 67) + '...' : session.lineB;
@@ -772,9 +765,11 @@ var WorldVisualizer = class WorldVisualizer {
     const agents = this.engine.agents;
     const centerX = w / 2;
     const centerY = h / 2;
+    const isZh = (typeof window !== 'undefined' && window.I18nManager && window.I18nManager.currentLang === 'zh');
 
     const topHubId = this.centralHubId || agents[0].id;
     const centralAgent = this.engine.agentMap.get(topHubId) || agents[0];
+    const centralName = isZh ? (centralAgent.nameZh || centralAgent.name) : centralAgent.name;
 
     // 1. Draw Radial Orbit Concentric Rings around the Central Hub Node
     ctx.save();
@@ -871,6 +866,7 @@ var WorldVisualizer = class WorldVisualizer {
       const isCentralHub = agent.id === topHubId;
       const nodeRadius = isCentralHub ? 28 : 20;
       const badge = this.getAgentShortBadge(agent);
+      const name = isZh ? (agent.nameZh || agent.name) : agent.name;
 
       ctx.save();
 
@@ -905,12 +901,12 @@ var WorldVisualizer = class WorldVisualizer {
       if (isCentralHub) {
         ctx.fillStyle = '#00f3ff';
         ctx.font = 'bold 9px Inter, sans-serif';
-        ctx.fillText('👑 PRIMARY HUB', node.x, node.y - nodeRadius - 10);
+        ctx.fillText(isZh ? '👑 核心枢纽' : '👑 PRIMARY HUB', node.x, node.y - nodeRadius - 10);
       }
 
       ctx.font = isCentralHub ? 'bold 11px Inter, sans-serif' : '10px Inter, sans-serif';
       ctx.fillStyle = isCentralHub ? '#00f3ff' : '#f8fafc';
-      ctx.fillText(agent.name, node.x, node.y + nodeRadius + 14);
+      ctx.fillText(name, node.x, node.y + nodeRadius + 14);
 
       ctx.restore();
     });
@@ -928,12 +924,12 @@ var WorldVisualizer = class WorldVisualizer {
 
     ctx.fillStyle = '#00f3ff';
     ctx.font = 'bold 11px Inter, sans-serif';
-    ctx.fillText(`👑 RADIAL SOCIAL NETWORK (PRIMARY HUB: ${centralAgent.name})`, 26, 34);
+    ctx.fillText(isZh ? `👑 同心圆社交网络 (核心枢纽: ${centralName})` : `👑 RADIAL SOCIAL NETWORK (PRIMARY HUB: ${centralName})`, 26, 34);
 
     ctx.fillStyle = '#cbd5e1';
     ctx.font = '10px Inter, sans-serif';
-    ctx.fillText(`• Centered on node with MAX connections & chats (${centralAgent.icon} ${centralAgent.name})`, 26, 50);
-    ctx.fillText('• Concentric radial orbits extend to direct & extended network contacts', 26, 66);
+    ctx.fillText(isZh ? `• 居中展示当前对话与连接数最多的核心思想家 (${centralAgent.icon} ${centralName})` : `• Centered on node with MAX connections & chats (${centralAgent.icon} ${centralName})`, 26, 50);
+    ctx.fillText(isZh ? '• 同心圆轨道延伸展开一级直连与二级扩展网络' : '• Concentric radial orbits extend to direct & extended network contacts', 26, 66);
     ctx.restore();
   }
 };

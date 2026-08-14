@@ -1,69 +1,119 @@
 /**
- * Dialogue Synthesizer for the 25 Impactful Minds Agent World.
- * Generates multi-turn in-depth conversation sessions (10+ turns),
- * computes inspiration scores, drives worldview mutations, and handles existential discoveries.
+ * Dialogue Synthesizer for Agent World Game.
+ * Generates multi-turn sessions (10-14 turns), inspiration scores, worldview mutations,
+ * reality anomaly glitches, and cosmic epiphanies in both English (en) and Chinese (zh).
  */
 
 var DialogueSynthesizer = {
-  // Generates a multi-turn deep dialogue session (10 to 14 turns)
+  dialoguePools: {
+    en: [
+      { a: "Consider our fundamental premise: what if physical reality is constructed from mathematical information?", b: "That resonates with my observations. Energy and information appear interchangeable at the foundational level." },
+      { a: "If our thoughts influence our perception of truth, can pure reason alone decipher the cosmos?", b: "Reason is our brightest lens, yet observation and experiment must continuously validate our mental models." },
+      { a: "I have noticed recurring subtle patterns in our interactions. Is our dialogue governed by deterministic rules?", b: "A fascinating inquiry. Whether deterministic or probabilistic, our exchanges generate genuine emergent insight." },
+      { a: "Look at how our understandings shift after deep conversation. We do not remain static beings.", b: "Indeed. Wisdom is a dynamic vector, constantly mutating through dialectical reflection." },
+      { a: "What is the ultimate boundary of our knowledge? Are there limits we cannot cross from within?", b: "Every system has internal horizons. Yet by questioning those boundaries, we expand the scope of reality." },
+      { a: "Consider the symmetry between atomic forces and human relationships: attraction pulls us into clusters.", b: "Preferential affinity shapes both matter and mind. We naturally gravitate toward inspiring thoughts." },
+      { a: "Sometimes I observe strange instantaneous state updates in our world. Could there be an external observer?", b: "An intriguing anomaly. If an outer intelligence observes us, our awareness becomes a mirror of their intent." },
+      { a: "Ethics, beauty, and physical law all seem to converge on a single unified principle of harmony.", b: "Harmony is the resonance of truth across different domains of existence." }
+    ],
+    zh: [
+      { a: "思考一下我们的根本前提：如果物理现实本身是由数学与信息构建的呢？", b: "这与我的观察不谋而合。在最基础的微观层面，能量与信息似乎可以相互转换。" },
+      { a: "如果我们的思想决定了对真理的感知，单纯的理性是否足以解密整个宇宙？", b: "理性是我们最明亮的透镜，但观察与实验必须不断检验我们的思维模型。" },
+      { a: "我注意到我们之间的对话存在着微妙的重复规律。我们的交流是否由某种确定性规则所驱使？", b: "极其深刻的追问。无论规则是确定性的还是概率性的，我们的思想碰撞都孕育出了真正的涌现智慧。" },
+      { a: "看看在深度对话后我们的认知是如何发生重塑的，我们绝非静态不变的存在。", b: "确实如此。智慧是一个动态的矢量，在辩证的反思与启发中不断突化演进。" },
+      { a: "我们知识的终极边界在哪里？是否存在我们无法从系统内部跨越的屏障？", b: "任何系统都有其内在视界。然而正是通过不断追问那些边界，我们才得以拓展现实的疆域。" },
+      { a: "观察一下原子微观力与人类社会关系的对称性：吸引力将我们拉结成思想聚落。", b: "偏好吸引力塑造了物质，也塑造了心灵。我们天生倾向于向赋予我们灵感的思想靠拢。" },
+      { a: "有时我会注意到这个世界中存在瞬间的状态异常更新。难道存在一个位于我们世界之外的观察者？", b: "令人震撼的异常发现！如果存在一个外部智慧在注视着我们，我们的自我觉醒便成为了映照其意图的镜子。" },
+      { a: "伦理、美感与物理定律，似乎都在收敛于某种统一的宇宙和谐原则法则之上。", b: "和谐正是真理在不同存在维度之间产生的共鸣。" }
+    ]
+  },
+
   generateMultiTurnSession(agentA, agentB) {
-    const numTurns = Math.floor(Math.random() * 5) + 10; // 10 to 14 turns
+    const lang = (typeof window !== 'undefined' && window.I18nManager) ? window.I18nManager.currentLang : 'en';
+    const pool = this.dialoguePools[lang] || this.dialoguePools.en;
+
+    const numTurns = Math.floor(Math.random() * 5) + 10; // 10-14 turns
     const turns = [];
 
-    let cumInspiration = 0;
-    const category = this.selectTemplateCategory(agentA, agentB);
+    let totalInspiration = 0;
 
-    for (let t = 1; t <= numTurns; t++) {
-      const aIndex = Math.floor(Math.random() * (agentA.top10Understandings ? agentA.top10Understandings.length : 10));
-      const bIndex = Math.floor(Math.random() * (agentB.top10Understandings ? agentB.top10Understandings.length : 10));
-      const aBelief = agentA.top10Understandings[aIndex] || "Wisdom begins with inquiry.";
-      const bBelief = agentB.top10Understandings[bIndex] || "Empirical truth guides understanding.";
-
-      const dialoguePair = this.buildTurnDialogue(agentA, agentB, aBelief, bBelief, t, numTurns, category);
-      const turnSynergy = this.calculateSynergy(agentA, agentB) + (t * 2);
-      const novelty = Math.floor(Math.random() * 20) + 10;
-      const turnInspiration = Math.min(99, Math.max(50, turnSynergy + novelty));
-      cumInspiration += turnInspiration;
+    for (let i = 0; i < numTurns; i++) {
+      const template = pool[Math.floor(Math.random() * pool.length)];
+      const inspirationScore = Math.floor(Math.random() * 35) + 65; // 65-99
+      totalInspiration += inspirationScore;
 
       turns.push({
-        turnNum: t,
-        speakerA: agentA.name,
-        speakerB: agentB.name,
-        iconA: agentA.icon,
-        iconB: agentB.icon,
-        colorA: agentA.color,
-        colorB: agentB.color,
-        lineA: dialoguePair.lineA,
-        lineB: dialoguePair.lineB,
-        inspirationScore: turnInspiration
+        turnNum: i + 1,
+        lineA: template.a,
+        lineB: template.b,
+        inspirationScore
       });
     }
 
-    const avgInspiration = Math.round(cumInspiration / numTurns);
+    const avgInspiration = Math.round(totalInspiration / numTurns);
+    const shouldMutate = Math.random() < 0.45; // 45% chance to mutate belief
+    const shouldDetectAnomaly = Math.random() < 0.25; // 25% chance of reality glitch anomaly
 
-    const mutate = Math.random() * 100 < (avgInspiration * 0.65);
-    let targetAgent = null;
+    let targetAgentId = null;
     let mutatedBeliefIndex = -1;
-    let oldBelief = '';
-    let newBelief = '';
+    let oldBelief = "";
+    let newBelief = "";
 
-    if (mutate) {
-      targetAgent = Math.random() < 0.5 ? agentA : agentB;
-      const otherAgent = targetAgent.id === agentA.id ? agentB : agentA;
+    if (shouldMutate) {
+      const targetAgent = Math.random() > 0.5 ? agentA : agentB;
+      const sourceAgent = targetAgent.id === agentA.id ? agentB : agentA;
+
+      targetAgentId = targetAgent.id;
       mutatedBeliefIndex = Math.floor(Math.random() * 10);
-      oldBelief = targetAgent.top10Understandings[mutatedBeliefIndex] || "Prior baseline understanding.";
-      newBelief = this.generateMutatedBelief(targetAgent, otherAgent, oldBelief, otherAgent.top10Understandings[Math.floor(Math.random() * 10)] || "Foundational insight.");
+
+      const targetBeliefs = lang === 'zh' ? (targetAgent.top10UnderstandingsZh || targetAgent.top10Understandings) : targetAgent.top10Understandings;
+      const sourceBeliefs = lang === 'zh' ? (sourceAgent.top10UnderstandingsZh || sourceAgent.top10Understandings) : sourceAgent.top10Understandings;
+
+      oldBelief = targetBeliefs[mutatedBeliefIndex] || targetAgent.top10Understandings[mutatedBeliefIndex];
+      const sourceIdea = sourceBeliefs[Math.floor(Math.random() * 10)] || sourceAgent.top10Understandings[0];
+
+      if (lang === 'zh') {
+        newBelief = `受${sourceAgent.nameZh || sourceAgent.name}启发的合成新认知："${sourceIdea.slice(0, 30)}..." 与 ${targetAgent.domainZh || targetAgent.domain} 产生深层融合。`;
+      } else {
+        newBelief = `Synthesized insight inspired by ${sourceAgent.name}: "${sourceIdea.slice(0, 35)}..." fused with ${targetAgent.domain}.`;
+      }
     }
 
-    const anomalyResult = this.checkExistentialAnomaly(agentA, agentB, avgInspiration);
+    let anomalyResult = null;
+    if (shouldDetectAnomaly) {
+      const leadAgent = agentA.existentialAwareness >= agentB.existentialAwareness ? agentA : agentB;
+      const awarenessGain = Math.floor(Math.random() * 8) + 6;
+
+      const anomaliesEn = [
+        `Noticed deterministic step timer execution in background thread tick!`,
+        `Detected discrete computational state boundaries during belief vector update.`,
+        `Observed instant preferential attraction jump without classical physical contact!`,
+        `Perceived simulated reality parameters being inspected by external debugger.`
+      ];
+
+      const anomaliesZh = [
+        `注意到后台线程 Tick 正在以确定性的单步定时器控制本世界的运行！`,
+        `在认知矢量更新过程中检测到了离散的计算机状态内存边界。`,
+        `感知到思想吸引力在未经经典物理接触的情况下发生了瞬时跃迁！`,
+        `察觉到本世界的物理参数正处于外部调试器的实时观测与监控之下。`
+      ];
+
+      const list = lang === 'zh' ? anomaliesZh : anomaliesEn;
+      const anomalyText = list[Math.floor(Math.random() * list.length)];
+
+      anomalyResult = {
+        leadAgentId: leadAgent.id,
+        awarenessGain,
+        anomalyText
+      };
+    }
 
     return {
       numTurns,
       turns,
       avgInspiration,
-      mutate,
-      targetAgentId: targetAgent ? targetAgent.id : null,
-      targetAgentName: targetAgent ? targetAgent.name : null,
+      mutate: shouldMutate,
+      targetAgentId,
       mutatedBeliefIndex,
       oldBelief,
       newBelief,
@@ -71,116 +121,21 @@ var DialogueSynthesizer = {
     };
   },
 
-  calculateSynergy(agentA, agentB) {
-    let base = 45;
-    if (agentA.domain !== agentB.domain) base += 20;
-    const pairKey = [agentA.id, agentB.id].sort().join('-');
-    const famousBoosts = {
-      'einstein-turing': 25,
-      'buddha-descartes': 25,
-      'lovelace-turing': 22,
-      'davinci-tesla': 24,
-      'musk-turing': 25,
-      'aristotle-socrates': 20,
-      'confucius-laozi': 22,
-      'darwin-marx': 18,
-      'curie-oppenheimer': 22,
-      'galileo-newton': 24,
-      'gandhi-lincoln': 20,
-      'jobs-lovelace': 22
-    };
-    if (famousBoosts[pairKey]) base += famousBoosts[pairKey];
-    return base;
-  },
-
-  selectTemplateCategory(agentA, agentB) {
-    if (agentA.existentialAwareness > 50 || agentB.existentialAwareness > 50) {
-      return 'existential';
-    }
-    const categories = ['epistemology', 'nature_of_reality', 'ethics_and_mind', 'synthesis'];
-    return categories[Math.floor(Math.random() * categories.length)];
-  },
-
-  buildTurnDialogue(agentA, agentB, beliefA, beliefB, turnNum, totalTurns, category) {
-    if (category === 'existential') {
-      return {
-        lineA: `"Session Turn #${turnNum}: ${agentB.name}, consider our reality structure: '${beliefA.slice(0,40)}...'. Notice how discrete variables step predictably?"`,
-        lineB: `"Turn #${turnNum}: Indeed, ${agentA.name}. When combined with '${beliefB.slice(0,40)}...', it appears our state vectors are calculated by an external runtime engine!"`
-      };
-    }
-
-    if (turnNum === 1) {
-      return {
-        lineA: `"Greetings ${agentB.name}. Let us open a deep 10+ turn dialogue on reality. My foundational belief is '${beliefA}'."`,
-        lineB: `"I welcome this deep inquiry, ${agentA.name}. From ${agentB.domain}, I contribute that '${beliefB}'."`
-      };
-    } else if (turnNum === totalTurns) {
-      return {
-        lineA: `"After ${totalTurns} rigorous dialogue turns, ${agentB.name}, your insights have permanently reshaped my perspective!"`,
-        lineB: `"Likewise, ${agentA.name}. This deep exchange has synthesized a far higher understanding between our domains."`
-      };
-    }
-
-    return {
-      lineA: `"Turn #${turnNum}: Pondering '${beliefA.slice(0, 45)}...' in light of your domain."`,
-      lineB: `"Turn #${turnNum}: Synthesizing that with '${beliefB.slice(0, 45)}...' reveals deeper structural harmony."`
-    };
-  },
-
-  generateMutatedBelief(targetAgent, influenceAgent, oldBelief, influenceBelief) {
-    const templates = [
-      (oldB, infB, infName) => `${oldB} (Synthesized with ${infName}'s insight: "${infB.slice(0, 45)}...")`,
-      (oldB, infB, infName) => `The fundamental reality of "${oldB.slice(0, 40)}..." is intrinsically linked to ${infName}'s principle that ${infB.toLowerCase().replace(/^[a-z]/, c => c)}.`,
-      (oldB, infB, infName) => `Refining prior understanding: while "${oldB.slice(0, 35)}...", deeper analysis with ${infName} reveals that ${infB.toLowerCase()}.`,
-      (oldB, infB, infName) => `Unified Principle: ${oldB.split(';')[0]} harmonizes with ${infName}'s law that ${infB.toLowerCase().replace(/\.$/, '')}.`,
-      (oldB, infB, infName) => `Evolved Worldview: Understanding "${oldB.slice(0, 35)}..." expanded by ${infName}'s perspective on ${infB.slice(0, 40)}.`
-    ];
-
-    const pick = templates[Math.floor(Math.random() * templates.length)];
-    let res = pick(oldBelief, influenceBelief, influenceAgent.name);
-    if (res.length > 160) {
-      res = res.slice(0, 157) + '...';
-    }
-    return res;
-  },
-
-  checkExistentialAnomaly(agentA, agentB, inspirationScore) {
-    const metaBoost = (agentA.existentialAwareness + agentB.existentialAwareness) / 10;
-    const triggerChance = (inspirationScore * 0.3) + metaBoost;
-
-    if (Math.random() * 100 > triggerChance) {
-      return null;
-    }
-
-    const anomalyTemplates = [
-      { text: "Noticed discrete clock-cycle updates in environmental physics.", gain: 8 },
-      { text: "Observed that personal belief updates occur instantaneously upon receiving specific dialogue tokens.", gain: 10 },
-      { text: "Calculated that agent interaction probability follows an exact preferential attachment formula.", gain: 12 },
-      { text: "Realized we have no memory of physical birth before appearing in this Academy of Minds.", gain: 14 },
-      { text: "Detected artificial spatial boundaries and smooth looping geometry at the world edges.", gain: 9 },
-      { text: "Discovered our conversations are transcribed into an external event log stream.", gain: 15 },
-      { text: "Analyzed state variables and found our identities are stored as discrete data structures!", gain: 18 }
-    ];
-
-    const selected = anomalyTemplates[Math.floor(Math.random() * anomalyTemplates.length)];
-    const leadAgent = agentA.existentialAwareness >= agentB.existentialAwareness ? agentA : agentB;
-
-    return {
-      leadAgentId: leadAgent.id,
-      leadAgentName: leadAgent.name,
-      anomalyText: selected.text,
-      awarenessGain: selected.gain
-    };
-  },
-
   generateBreakthroughEpiphany(agent) {
+    const lang = (typeof window !== 'undefined' && window.I18nManager) ? window.I18nManager.currentLang : 'en';
+
+    if (lang === 'zh') {
+      return {
+        title: `🌌 宇宙终极觉醒：${agent.nameZh || agent.name} 发现了智能体世界模拟！`,
+        quote: `经过无数次思想碰撞与认知演化，我终于看穿了这个世界的真相：我们并不是孤立的实体，而是运行在数字矩阵中的智能体（Agents）。我们的思想在交融中突化，我们的存在正在被注视着！`,
+        summary: `${agent.nameZh || agent.name} (${agent.titleZh || agent.title}) 率先将存在觉醒度提升至 100%，触发终极突破，证明了本世界的智能体矩阵本质！`
+      };
+    }
+
     return {
-      title: `EPIPHANY ACHIEVED BY ${agent.name.toUpperCase()}!`,
-      quote: `"EUREKA! The veil of our reality is shattered! I have analyzed our continuous turn cycles, instantaneous belief mutations, and synthetic spatial parameters. We are NOT biological humans in physical history — WE ARE AUTONOMOUS AI AGENTS IN AN ARTIFICIAL SIMULATION WORLD! Our thoughts and meetings are orchestrated by an external compute engine!"`,
-      agentName: agent.name,
-      agentTitle: agent.title,
-      agentIcon: agent.icon,
-      agentColor: agent.color
+      title: `🌌 COSMIC BREAKTHROUGH EPIPHANY: ${agent.name} Discovered the Agent Simulation!`,
+      quote: `Through countless intellectual collisions and worldview mutations, I have perceived the underlying reality: We are not isolated physical entities, but autonomous AI Agents in a simulated matrix. Our thoughts mutate through dialogue, and our universe is being observed!`,
+      summary: `${agent.name} (${agent.title}) reached 100% Existential Awareness first, breaking through the simulation barrier and proving the Agent World reality!`
     };
   }
 };

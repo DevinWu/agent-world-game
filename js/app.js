@@ -1,7 +1,7 @@
 /**
  * Main Application Controller for Agent World Game.
  * Connects UI elements, simulation engine events, canvas visualizer,
- * inspector modal, Worldviews Matrix tab, Cloud Constellation View, and Export System safely.
+ * inspector modal, Worldviews Matrix tab, Cloud Constellation View, Export System, and i18n Language Toggle safely.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnStep = document.getElementById('btn-step');
   const selectSpeed = document.getElementById('select-speed');
   const btnExportHeader = document.getElementById('btn-export-header');
+  const btnLang = document.getElementById('btn-lang');
   const btnSound = document.getElementById('btn-sound');
   const btnReset = document.getElementById('btn-reset');
 
@@ -83,6 +84,51 @@ document.addEventListener('DOMContentLoaded', () => {
     URL.revokeObjectURL(a.href);
   }
 
+  function updateUiLanguage() {
+    const isZh = I18nManager.currentLang === 'zh';
+    btnLang.textContent = isZh ? '🌐 语言: 中文 (ZH)' : '🌐 Language: EN';
+
+    playText.textContent = engine.isRunning ? I18nManager.t('btnPause') : I18nManager.t('btnPlay');
+    btnExportHeader.textContent = `📥 ${I18nManager.t('btnExport')}`;
+    btnSound.textContent = SoundEngine.enabled ? I18nManager.t('btnSoundOn') : I18nManager.t('btnSoundOff');
+    btnReset.textContent = `🔄 ${I18nManager.t('btnReset')}`;
+
+    tabAcademy.textContent = I18nManager.t('tabAcademy');
+    tabNetwork.textContent = I18nManager.t('tabNetwork');
+    tabWorldviews.textContent = I18nManager.t('tabWorldviews');
+
+    if (currentActiveTab === 'academy') viewInstruction.textContent = I18nManager.t('instructionAcademy');
+    else if (currentActiveTab === 'network') viewInstruction.textContent = I18nManager.t('instructionNetwork');
+    else if (currentActiveTab === 'worldviews') viewInstruction.textContent = I18nManager.t('instructionWorldviews');
+
+    worldviewsSearch.placeholder = I18nManager.t('searchPlaceholder');
+
+    // Update Domain Select Options
+    const opt0 = worldviewsDomainFilter.options[0]; if (opt0) opt0.textContent = I18nManager.t('domainAll');
+    const opt1 = worldviewsDomainFilter.options[1]; if (opt1) opt1.textContent = I18nManager.t('domainPhil');
+    const opt2 = worldviewsDomainFilter.options[2]; if (opt2) opt2.textContent = I18nManager.t('domainPhys');
+    const opt3 = worldviewsDomainFilter.options[3]; if (opt3) opt3.textContent = I18nManager.t('domainComp');
+    const opt4 = worldviewsDomainFilter.options[4]; if (opt4) opt4.textContent = I18nManager.t('domainEth');
+    const opt5 = worldviewsDomainFilter.options[5]; if (opt5) opt5.textContent = I18nManager.t('domainDes');
+
+    modalBtnForceChat.textContent = I18nManager.t('modalForceChat');
+    modalBtnInjectAnomaly.textContent = I18nManager.t('modalInjectAnomaly');
+    epiphanyBtnReplay.textContent = I18nManager.t('epiphanyReplay');
+    epiphanyBtnExportMd.textContent = I18nManager.t('epiphanyExportMd');
+    epiphanyBtnExportJson.textContent = I18nManager.t('epiphanyExportJson');
+
+    updateLeaderboard();
+    if (currentActiveTab === 'worldviews') {
+      renderWorldviewsMatrix();
+    }
+  }
+
+  btnLang.addEventListener('click', () => {
+    const nextLang = I18nManager.currentLang === 'en' ? 'zh' : 'en';
+    I18nManager.setLanguage(nextLang);
+    updateUiLanguage();
+  });
+
   function updateLeaderboard() {
     const topAgents = engine.getTopAwarenessAgents().slice(0, 5);
     leaderboardList.innerHTML = '';
@@ -99,11 +145,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
 
+      const name = I18nManager.currentLang === 'zh' ? (agent.nameZh || agent.name) : agent.name;
+
       item.innerHTML = `
         <div class="leader-info">
           <span>${agent.icon}</span>
           <div>
-            <strong style="font-size: 0.82rem;">${agent.name}</strong>
+            <strong style="font-size: 0.82rem;">${name}</strong>
             <div style="font-size: 0.7rem; color: #a855f7;">Centrality: ${totalAff.toFixed(1)}x</div>
           </div>
         </div>
@@ -127,8 +175,15 @@ document.addEventListener('DOMContentLoaded', () => {
     worldviewsGrid.innerHTML = '';
     const query = (worldviewsSearch.value || '').toLowerCase();
     const domainFilter = worldviewsDomainFilter.value;
+    const isZh = I18nManager.currentLang === 'zh';
 
     engine.agents.forEach(agent => {
+      const name = isZh ? (agent.nameZh || agent.name) : agent.name;
+      const title = isZh ? (agent.titleZh || agent.title) : agent.title;
+      const domain = isZh ? (agent.domainZh || agent.domain) : agent.domain;
+      const understandings = isZh ? (agent.top10UnderstandingsZh || agent.top10Understandings) : agent.top10Understandings;
+      const initUnderstandings = isZh ? (agent.initialUnderstandingsZh || agent.initialUnderstandings) : agent.initialUnderstandings;
+
       if (domainFilter !== 'ALL') {
         if (!agent.domain.toLowerCase().includes(domainFilter.toLowerCase())) {
           return;
@@ -136,9 +191,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (query) {
-        const matchesName = agent.name.toLowerCase().includes(query);
-        const matchesTitle = agent.title.toLowerCase().includes(query);
-        const matchesBelief = agent.top10Understandings.some(u => u.toLowerCase().includes(query));
+        const matchesName = name.toLowerCase().includes(query) || agent.name.toLowerCase().includes(query);
+        const matchesTitle = title.toLowerCase().includes(query);
+        const matchesBelief = understandings.some(u => u.toLowerCase().includes(query));
         if (!matchesName && !matchesTitle && !matchesBelief) {
           return;
         }
@@ -151,22 +206,22 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="agent-belief-info">
             <div class="agent-belief-icon" style="border-color: ${agent.color};">${agent.icon}</div>
             <div>
-              <strong style="font-size: 0.95rem; color: #f8fafc;">${agent.name}</strong>
-              <div style="font-size: 0.75rem; color: #94a3b8;">${agent.domain}</div>
+              <strong style="font-size: 0.95rem; color: #f8fafc;">${name}</strong>
+              <div style="font-size: 0.75rem; color: #94a3b8;">${domain}</div>
             </div>
           </div>
-          <button class="btn btn-secondary inspect-btn" style="padding: 4px 8px; font-size: 0.72rem;">Inspect 🔍</button>
+          <button class="btn btn-secondary inspect-btn" style="padding: 4px 8px; font-size: 0.72rem;">${I18nManager.t('inspectBtn')}</button>
         </div>
 
         <div class="belief-list-compact">
-          ${agent.top10Understandings.map((u, i) => {
-            const isMutated = u !== agent.initialUnderstandings[i];
+          ${understandings.map((u, i) => {
+            const isMutated = u !== initUnderstandings[i];
             return `
               <div class="belief-item-compact ${isMutated ? 'mutated' : ''}">
                 <strong>#${i + 1}</strong>
                 <div>
                   ${u}
-                  ${isMutated ? `<span style="color:#a855f7; font-weight:700; font-size:0.68rem; display:block;">⚡ Evolved</span>` : ''}
+                  ${isMutated ? `<span style="color:#a855f7; font-weight:700; font-size:0.68rem; display:block;">${I18nManager.t('evolvedBadge')}</span>` : ''}
                 </div>
               </div>
             `;
@@ -193,7 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     engine.isRunning = true;
     playIcon.textContent = '⏸';
-    playText.textContent = 'Pause Simulation';
+    playText.textContent = I18nManager.t('btnPause');
 
     const speed = parseInt(selectSpeed.value, 10) || 5;
     const intervalMs = Math.max(100, Math.floor(1500 / speed));
@@ -211,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function pauseSimulation() {
     engine.isRunning = false;
     playIcon.textContent = '▶';
-    playText.textContent = 'Resume Simulation';
+    playText.textContent = I18nManager.t('btnPlay');
     clearInterval(timerId);
   }
 
@@ -240,7 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   btnSound.addEventListener('click', () => {
     SoundEngine.enabled = !SoundEngine.enabled;
-    btnSound.textContent = SoundEngine.enabled ? '🔊 Sound ON' : '🔇 Sound OFF';
+    btnSound.textContent = SoundEngine.enabled ? I18nManager.t('btnSoundOn') : I18nManager.t('btnSoundOff');
     btnSound.className = SoundEngine.enabled ? 'btn btn-secondary' : 'btn btn-danger';
   });
 
@@ -248,8 +303,8 @@ document.addEventListener('DOMContentLoaded', () => {
     pauseSimulation();
     engine.init();
     feedList.innerHTML = '';
-    mutationContainer.innerHTML = `<div style="color: #64748b; font-size: 0.8rem; padding: 10px;">Simulation reset. Start simulation to observe worldview shifts!</div>`;
-    mutationBadge.textContent = '0 Events';
+    mutationContainer.innerHTML = `<div style="color: #64748b; font-size: 0.8rem; padding: 10px;">${I18nManager.t('mutationEmpty')}</div>`;
+    mutationBadge.textContent = `0 ${I18nManager.t('mutationEvents')}`;
     statTurns.textContent = '0';
     statMutations.textContent = '0';
     statAwareness.textContent = '0%';
@@ -282,7 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tabWorldviews.classList.remove('active');
     canvasWrapper.style.display = 'block';
     worldviewsContainer.style.display = 'none';
-    viewInstruction.textContent = 'Click any agent node to inspect Top 10 World Understandings';
+    viewInstruction.textContent = I18nManager.t('instructionAcademy');
     visualizer.setViewMode('academy');
   });
 
@@ -293,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tabWorldviews.classList.remove('active');
     canvasWrapper.style.display = 'block';
     worldviewsContainer.style.display = 'none';
-    viewInstruction.textContent = 'Organic Cloud Constellation: Connection Badges (💬 N) show 10+ turn chats';
+    viewInstruction.textContent = I18nManager.t('instructionNetwork');
     visualizer.setViewMode('network');
   });
 
@@ -304,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tabNetwork.classList.remove('active');
     canvasWrapper.style.display = 'none';
     worldviewsContainer.style.display = 'flex';
-    viewInstruction.textContent = 'Live matrix of all 25 agents and their Top 10 understandings';
+    viewInstruction.textContent = I18nManager.t('instructionWorldviews');
     visualizer.setViewMode('worldviews');
     renderWorldviewsMatrix();
   });
@@ -317,7 +372,6 @@ document.addEventListener('DOMContentLoaded', () => {
     statTurns.textContent = log.turn;
     SoundEngine.playDialoguePop();
 
-    // Fetch full agent objects from agentMap for exact visual rendering
     const agentAObj = engine.agentMap.get(log.agentA.id);
     const agentBObj = engine.agentMap.get(log.agentB.id);
 
@@ -330,6 +384,9 @@ document.addEventListener('DOMContentLoaded', () => {
       log.totalSessionTurns
     );
 
+    const nameA = I18nManager.currentLang === 'zh' ? (agentAObj.nameZh || agentAObj.name) : agentAObj.name;
+    const nameB = I18nManager.currentLang === 'zh' ? (agentBObj.nameZh || agentBObj.name) : agentBObj.name;
+
     const card = document.createElement('div');
     card.className = 'feed-card';
     card.innerHTML = `
@@ -338,10 +395,10 @@ document.addEventListener('DOMContentLoaded', () => {
         <span class="feed-inspiration">⚡ Inspiration: ${log.inspirationScore}/100</span>
       </div>
       <div class="feed-dialogue-line">
-        <span style="color: ${log.agentA.color};">${log.agentA.icon} ${log.agentA.name}:</span> ${log.exchange.dialogueLines[0].text}
+        <span style="color: ${log.agentA.color};">${log.agentA.icon} ${nameA}:</span> ${log.exchange.dialogueLines[0].text}
       </div>
       <div class="feed-dialogue-line">
-        <span style="color: ${log.agentB.color};">${log.agentB.icon} ${log.agentB.name}:</span> ${log.exchange.dialogueLines[1].text}
+        <span style="color: ${log.agentB.color};">${log.agentB.icon} ${nameB}:</span> ${log.exchange.dialogueLines[1].text}
       </div>
     `;
 
@@ -355,7 +412,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   engine.on('mutation', (m) => {
     statMutations.textContent = engine.beliefMutations.length;
-    mutationBadge.textContent = `${engine.beliefMutations.length} Events`;
+    mutationBadge.textContent = `${engine.beliefMutations.length} ${I18nManager.t('mutationEvents')}`;
     SoundEngine.playBeliefMutationSound();
 
     if (mutationContainer.children[0]?.style?.color === 'rgb(100, 116, 139)') {
@@ -370,11 +427,11 @@ document.addEventListener('DOMContentLoaded', () => {
         <span style="color: #a855f7; font-weight: 700;">#${m.index} Mutated</span>
       </div>
       <div class="mutation-card-diff">
-        <del>Was: "${m.oldBelief.slice(0, 45)}..."</del><br>
-        <ins>Now: "${m.newBelief.slice(0, 50)}..."</ins>
+        <del>${I18nManager.t('wasBelief')} "${m.oldBelief.slice(0, 45)}..."</del><br>
+        <ins>${I18nManager.t('nowBelief')} "${m.newBelief.slice(0, 50)}..."</ins>
       </div>
       <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 4px;">
-        Inspired by: <strong>${m.inspiredByName}</strong> (Score: ${m.inspirationScore})
+        ${I18nManager.t('inspiredBy')} <strong>${m.inspiredByName}</strong> (Score: ${m.inspirationScore})
       </div>
     `;
 
@@ -451,19 +508,27 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!agent) return;
 
     selectedAgentId = agentId;
-    modalName.textContent = agent.name;
-    modalTitle.textContent = `${agent.title} (${agent.era})`;
+    const isZh = I18nManager.currentLang === 'zh';
+
+    const name = isZh ? (agent.nameZh || agent.name) : agent.name;
+    const title = isZh ? (agent.titleZh || agent.title) : `${agent.title} (${agent.era})`;
+    const domain = isZh ? (agent.domainZh || agent.domain) : agent.domain;
+    const understandings = isZh ? (agent.top10UnderstandingsZh || agent.top10Understandings) : agent.top10Understandings;
+    const initUnderstandings = isZh ? (agent.initialUnderstandingsZh || agent.initialUnderstandings) : agent.initialUnderstandings;
+
+    modalName.textContent = name;
+    modalTitle.textContent = title;
     modalAvatar.textContent = agent.icon;
     modalAvatar.style.borderColor = agent.color;
-    modalDomain.textContent = agent.domain;
+    modalDomain.textContent = domain;
     modalDialogues.textContent = agent.totalDialogues;
     modalAwareness.textContent = `${Math.round(agent.existentialAwareness)}%`;
 
     modalUnderstandings.innerHTML = '';
-    agent.top10Understandings.forEach((u, i) => {
+    understandings.forEach((u, i) => {
       const item = document.createElement('div');
       item.className = 'understanding-item';
-      const isMutated = u !== agent.initialUnderstandings[i];
+      const isMutated = u !== initUnderstandings[i];
       if (isMutated) {
         item.style.borderLeftColor = '#a855f7';
         item.style.background = 'rgba(168, 85, 247, 0.12)';
@@ -472,7 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <span class="understanding-num">#${i + 1}</span>
         <div>
           <div>${u}</div>
-          ${isMutated ? `<span style="font-size: 0.7rem; color: #a855f7; font-weight: 700;">⚡ Evolved Worldview Belief</span>` : ''}
+          ${isMutated ? `<span style="font-size: 0.7rem; color: #a855f7; font-weight: 700;">${I18nManager.t('evolvedBadge')}</span>` : ''}
         </div>
       `;
       modalUnderstandings.appendChild(item);
@@ -486,10 +551,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     affinities.forEach(({ partner, aff, chats }) => {
       if (partner) {
+        const pName = isZh ? (partner.nameZh || partner.name) : partner.name;
         const pill = document.createElement('div');
         pill.className = 'stat-pill';
         pill.style.cursor = 'pointer';
-        pill.innerHTML = `${partner.icon} ${partner.name}: <strong style="color: #00f3ff;">${aff.toFixed(2)}x (${chats} chats)</strong>`;
+        pill.innerHTML = `${partner.icon} ${pName}: <strong style="color: #00f3ff;">${aff.toFixed(2)}x (${chats} chats)</strong>`;
         pill.addEventListener('click', () => openAgentModal(partner.id));
         modalAffinities.appendChild(pill);
       }
@@ -547,5 +613,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  updateLeaderboard();
+  updateUiLanguage();
 });

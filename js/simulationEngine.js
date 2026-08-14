@@ -1,7 +1,7 @@
 /**
  * Simulation Engine for Agent World Game.
  * Manages 25 Agent states, Dynamic Affinity Matrix, Conversation Session Tracker (10+ turns per chat),
- * Numerical Connection Matrix, Worldview Mutation, and Export functionality.
+ * Numerical Connection Matrix, Worldview Mutation, Export functionality, and Bilingual (EN/ZH) Data.
  */
 
 var SimulationEngine = class SimulationEngine {
@@ -60,14 +60,19 @@ var SimulationEngine = class SimulationEngine {
       return {
         id: d.id,
         name: d.name,
+        nameZh: d.nameZh || d.name,
         title: d.title,
+        titleZh: d.titleZh || d.title,
         era: d.era,
         domain: d.domain,
+        domainZh: d.domainZh || d.domain,
         color: d.color || '#00f3ff',
         icon: d.icon || '🏛️',
         baseTraits: [...d.baseTraits],
         top10Understandings: [...d.initialUnderstandings],
         initialUnderstandings: [...d.initialUnderstandings],
+        top10UnderstandingsZh: [...(d.initialUnderstandingsZh || d.initialUnderstandings)],
+        initialUnderstandingsZh: [...(d.initialUnderstandingsZh || d.initialUnderstandings)],
         existentialAwareness: 0,
         totalDialogues: 0,
         mutationsCount: 0,
@@ -223,6 +228,7 @@ var SimulationEngine = class SimulationEngine {
         if (targetAgent && session.sessionData.mutatedBeliefIndex >= 0) {
           targetAgent.mutationsCount++;
           targetAgent.top10Understandings[session.sessionData.mutatedBeliefIndex] = session.sessionData.newBelief;
+          targetAgent.top10UnderstandingsZh[session.sessionData.mutatedBeliefIndex] = session.sessionData.newBelief;
 
           const mutationRecord = {
             turn: this.turns,
