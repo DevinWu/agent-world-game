@@ -22,8 +22,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const selectSpeed = document.getElementById('select-speed');
   const btnExportHeader = document.getElementById('btn-export-header');
   const btnLang = document.getElementById('btn-lang');
+  const btnLangFloat = document.getElementById('btn-lang-float');
   const btnSound = document.getElementById('btn-sound');
   const btnReset = document.getElementById('btn-reset');
+  const brandSub = document.getElementById('brand-sub');
 
   const statTurns = document.getElementById('stat-turns');
   const statMutations = document.getElementById('stat-mutations');
@@ -86,7 +88,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateUiLanguage() {
     const isZh = I18nManager.currentLang === 'zh';
-    btnLang.textContent = isZh ? '🌐 语言: 中文 (ZH)' : '🌐 Language: EN';
+    if (btnLang) btnLang.textContent = isZh ? '🌐 语言: 中文 (ZH)' : '🌐 Language: EN';
+    if (btnLangFloat) btnLangFloat.textContent = isZh ? '🌐 Switch to EN' : '🌐 切换中文';
+    if (brandSub) brandSub.textContent = I18nManager.t('brandSub');
 
     playText.textContent = engine.isRunning ? I18nManager.t('btnPause') : I18nManager.t('btnPlay');
     btnExportHeader.textContent = `📥 ${I18nManager.t('btnExport')}`;
@@ -123,11 +127,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  btnLang.addEventListener('click', () => {
+  function toggleLanguage() {
     const nextLang = I18nManager.currentLang === 'en' ? 'zh' : 'en';
     I18nManager.setLanguage(nextLang);
     updateUiLanguage();
-  });
+  }
+
+  if (btnLang) btnLang.addEventListener('click', toggleLanguage);
+  if (btnLangFloat) btnLangFloat.addEventListener('click', toggleLanguage);
 
   function updateLeaderboard() {
     const topAgents = engine.getTopAwarenessAgents().slice(0, 5);
