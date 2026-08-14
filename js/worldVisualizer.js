@@ -52,15 +52,17 @@ var WorldVisualizer = class WorldVisualizer {
     const w = this.canvas && this.canvas.width ? this.canvas.width : 800;
     const h = this.canvas && this.canvas.height ? this.canvas.height : 550;
 
-    this.engine.agents.forEach(agent => {
-      this.cloudNodes.set(agent.id, {
-        x: w / 2 + (Math.random() - 0.5) * (w * 0.6),
-        y: h / 2 + (Math.random() - 0.5) * (h * 0.6),
-        vx: 0,
-        vy: 0,
-        radius: 22
+    if (this.engine && this.engine.agents) {
+      this.engine.agents.forEach(agent => {
+        this.cloudNodes.set(agent.id, {
+          x: w / 2 + (Math.random() - 0.5) * (w * 0.6),
+          y: h / 2 + (Math.random() - 0.5) * (h * 0.6),
+          vx: 0,
+          vy: 0,
+          radius: 22
+        });
       });
-    });
+    }
   }
 
   resizeCanvas() {
@@ -115,6 +117,37 @@ var WorldVisualizer = class WorldVisualizer {
       'Hypatia of Alexandria': 'HYP'
     };
     return nameMap[agent.name] || agent.name.slice(0, 3).toUpperCase();
+  }
+
+  getTopAffinityPairs(limit = 15) {
+    if (this.engine && typeof this.engine.getTopAffinityPairs === 'function') {
+      try {
+        return this.engine.getTopAffinityPairs(limit);
+      } catch (e) {}
+    }
+
+    const pairs = [];
+    const agents = this.engine ? this.engine.agents : [];
+    if (!agents || agents.length < 2) return [];
+
+    const matrix = (this.engine && this.engine.affinityMatrix) || {};
+
+    for (let i = 0; i < agents.length; i++) {
+      for (let j = i + 1; j < agents.length; j++) {
+        const idA = agents[i].id;
+        const idB = agents[j].id;
+        const affA = (matrix[idA] && matrix[idA][idB]) || 1.0;
+        const affB = (matrix[idB] && matrix[idB][idA]) || 1.0;
+        const aff = (affA + affB) / 2;
+
+        pairs.push({
+          agentA: agents[i],
+          agentB: agents[j],
+          affinity: aff
+        });
+      }
+    }
+    return pairs.sort((a, b) => b.affinity - a.affinity).slice(0, limit);
   }
 
   addSpeechBubble(agentA, agentB, lines, inspirationScore, sessionTurn = 1, totalSessionTurns = 12) {
@@ -193,6 +226,8 @@ var WorldVisualizer = class WorldVisualizer {
     const usableW = Math.max(200, width - paddingX * 2);
     const usableH = Math.max(200, height - paddingY * 2);
 
+    if (!this.engine || !this.engine.agents) return;
+
     this.engine.agents.forEach((agent, idx) => {
       const cols = 5;
       const col = idx % cols;
@@ -232,6 +267,8 @@ var WorldVisualizer = class WorldVisualizer {
     const h = (this.canvas && this.canvas.height) || 550;
     const centerX = w / 2;
     const centerY = h / 2;
+
+    if (!this.engine || !this.engine.agents) return;
     const agents = this.engine.agents;
 
     agents.forEach(a => {
@@ -266,6 +303,7 @@ var WorldVisualizer = class WorldVisualizer {
       }
     }
 
+    const matrix = this.engine.affinityMatrix || {};
     for (let i = 0; i < agents.length; i++) {
       const idA = agents[i].id;
       const nodeA = this.cloudNodes.get(idA);
@@ -274,7 +312,9 @@ var WorldVisualizer = class WorldVisualizer {
         const idB = agents[j].id;
         const nodeB = this.cloudNodes.get(idB);
         if (!nodeB) continue;
-        const aff = (this.engine.affinityMatrix[idA][idB] + this.engine.affinityMatrix[idB][idA]) / 2;
+        const affA = (matrix[idA] && matrix[idA][idB]) || 1.0;
+        const affB = (matrix[idB] && matrix[idB][idA]) || 1.0;
+        const aff = (affA + affB) / 2;
 
         if (aff > 1.2) {
           const dx = nodeB.x - nodeA.x;
@@ -414,7 +454,7 @@ var WorldVisualizer = class WorldVisualizer {
     }
 
     // Idle Simulation Watermark Prompt
-    if (!this.engine.isRunning && this.engine.turns === 0) {
+    if (this.engine && !this.engine.isRunning && this.engine.turns === 0) {
       ctx.save();
       ctx.fillStyle = 'rgba(0, 243, 255, 0.85)';
       ctx.font = 'bold 13px Inter, sans-serif';
@@ -425,10 +465,8 @@ var WorldVisualizer = class WorldVisualizer {
   }
 
   drawAcademyView(ctx, w, h) {
-    // Affinity Links (Safely fetch top affinity pairs)
-    const pairs = (this.engine && typeof this.engine.getTopAffinityPairs === 'function') 
-      ? this.engine.getTopAffinityPairs(15) 
-      : [];
+    // Safely get top affinity pairs via internal fallback
+    const pairs = this.getTopAffinityPairs(15);
 
     pairs.forEach(p => {
       if (p.affinity > 1.2 && p.agentA && p.agentB) {
@@ -449,7 +487,7 @@ var WorldVisualizer = class WorldVisualizer {
     let activeAgentA = null;
     let activeAgentB = null;
 
-    if (this.engine.activeSession) {
+    if (this.engine && this.engine.activeSession) {
       activeAgentA = this.engine.activeSession.agentA;
       activeAgentB = this.engine.activeSession.agentB;
     } else if (this.currentDialogueSession && (Date.now() - this.currentDialogueSession.createdAt < 4500)) {
@@ -503,6 +541,8 @@ var WorldVisualizer = class WorldVisualizer {
     }
 
     // Draw Agent Nodes (All 25 Agents)
+    if (!this.engine || !this.engine.agents) return;
+
     this.engine.agents.forEach(agent => {
       const isConversing = (activeAgentA && activeAgentA.id === agent.id) || (activeAgentB && activeAgentB.id === agent.id);
       const color = agent.color || '#00f3ff';
@@ -632,16 +672,19 @@ var WorldVisualizer = class WorldVisualizer {
   }
 
   drawCloudNetworkView(ctx, w, h) {
+    if (!this.engine || !this.engine.agents) return;
     const agents = this.engine.agents;
 
     const centralityMap = new Map();
     let maxCentrality = 1;
 
+    const matrix = this.engine.affinityMatrix || {};
+
     agents.forEach(agent => {
       let totalAff = 0;
       agents.forEach(other => {
         if (other.id !== agent.id) {
-          totalAff += (this.engine.affinityMatrix[agent.id][other.id] || 1.0);
+          totalAff += (matrix[agent.id] && matrix[agent.id][other.id]) || 1.0;
         }
       });
       centralityMap.set(agent.id, totalAff);
@@ -667,6 +710,8 @@ var WorldVisualizer = class WorldVisualizer {
       }
     });
 
+    const countMatrix = this.engine.conversationCountMatrix || {};
+
     for (let i = 0; i < agents.length; i++) {
       const a = agents[i];
       const nodeA = this.cloudNodes.get(a.id);
@@ -676,8 +721,10 @@ var WorldVisualizer = class WorldVisualizer {
         const nodeB = this.cloudNodes.get(b.id);
         if (!nodeB) continue;
 
-        const aff = (this.engine.affinityMatrix[a.id][b.id] + this.engine.affinityMatrix[b.id][a.id]) / 2;
-        const chats = this.engine.conversationCountMatrix[a.id][b.id] || 0;
+        const affA = (matrix[a.id] && matrix[a.id][b.id]) || 1.0;
+        const affB = (matrix[b.id] && matrix[b.id][a.id]) || 1.0;
+        const aff = (affA + affB) / 2;
+        const chats = (countMatrix[a.id] && countMatrix[a.id][b.id]) || 0;
 
         if (aff > 1.1 || chats > 0) {
           ctx.save();
