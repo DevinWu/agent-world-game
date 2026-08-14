@@ -2,7 +2,7 @@
  * Simulation Engine for Agent World Game.
  * Manages 25 Agent states, Dynamic Affinity Matrix, Conversation Session Tracker (10+ turns per chat),
  * Dialectical Debate & Resistance Check, Worldview Mutation with Rationale ("Why Changed"),
- * Export functionality, and Bilingual (EN/ZH) Data.
+ * Undiscovered Universal Laws Matrix, Export functionality, and Bilingual (EN/ZH) Data.
  */
 
 var SimulationEngine = class SimulationEngine {
@@ -15,6 +15,7 @@ var SimulationEngine = class SimulationEngine {
     this.isRunning = false;
     this.historyLogs = [];
     this.beliefMutations = [];
+    this.undiscoveredLaws = [];
     this.anomalyLogs = [];
     this.winnerAgent = null;
     this.epiphanyData = null;
@@ -27,6 +28,7 @@ var SimulationEngine = class SimulationEngine {
       sessionStart: [],
       sessionEnd: [],
       mutation: [],
+      lawDiscovered: [],
       anomaly: [],
       epiphany: [],
       reset: []
@@ -40,6 +42,7 @@ var SimulationEngine = class SimulationEngine {
     this.isRunning = false;
     this.historyLogs = [];
     this.beliefMutations = [];
+    this.undiscoveredLaws = [];
     this.anomalyLogs = [];
     this.winnerAgent = null;
     this.epiphanyData = null;
@@ -262,6 +265,17 @@ var SimulationEngine = class SimulationEngine {
         }
       }
 
+      // Check Undiscovered Law Discovery
+      if (session.sessionData.discoveredLaw) {
+        const law = session.sessionData.discoveredLaw;
+        const exists = this.undiscoveredLaws.some(l => l.nameEn === law.nameEn);
+        if (!exists) {
+          law.turn = this.turns;
+          this.undiscoveredLaws.unshift(law);
+          this.notify('lawDiscovered', law);
+        }
+      }
+
       if (session.sessionData.anomalyResult) {
         const leadAgent = this.agentMap.get(session.sessionData.anomalyResult.leadAgentId);
         if (leadAgent) {
@@ -355,7 +369,9 @@ var SimulationEngine = class SimulationEngine {
         timestamp,
         totalTurns: this.turns,
         totalMutations: this.beliefMutations.length,
+        totalUndiscoveredLaws: this.undiscoveredLaws.length,
         winnerAgent: this.winnerAgent ? { name: this.winnerAgent.name, title: this.winnerAgent.title } : null,
+        undiscoveredLawsDiscovered: this.undiscoveredLaws,
         top10MostInsightfulIdeas: topEmergent.map(m => ({
           idea: m.newBelief,
           author: m.agentName,
@@ -382,11 +398,23 @@ var SimulationEngine = class SimulationEngine {
 
     let md = `# 🌐 AGENT WORLD GAME - SIMULATION REPORT\n`;
     md += `**Timestamp**: ${timestamp}\n`;
-    md += `**Total Turns**: ${this.turns} | **Worldview Mutations**: ${this.beliefMutations.length}\n`;
+    md += `**Total Turns**: ${this.turns} | **Worldview Mutations**: ${this.beliefMutations.length} | **Undiscovered Universal Laws Synthesized**: ${this.undiscoveredLaws.length}\n`;
     if (this.winnerAgent) {
       md += `**Simulation Discoverer**: ${this.winnerAgent.icon} **${this.winnerAgent.name}** (${this.winnerAgent.title})\n`;
     }
     md += `\n---\n\n`;
+
+    if (this.undiscoveredLaws.length > 0) {
+      md += `## 🌌 UNDISCOVERED UNIVERSAL LAWS SYNTHESIZED BY THINKERS\n\n`;
+      this.undiscoveredLaws.forEach((l, idx) => {
+        md += `### ${idx + 1}. ${l.nameEn} (${l.nameZh})\n`;
+        md += `- **Co-Derived By**: ${l.agentAIcon} ${l.agentAName} & ${l.agentBIcon} ${l.agentBName}\n`;
+        md += `- **Hypothesis**: ${l.hypothesisEn}\n`;
+        md += `- **Real-World Status**: ${l.realWorldStatusEn}\n`;
+        md += `- **Theoretical Plausibility**: ${l.plausibility}%\n\n`;
+      });
+      md += `---\n\n`;
+    }
 
     md += `## 💡 TOP 10 MOST INSIGHTFUL NEWLY EMERGENT IDEAS\n\n`;
     topEmergent.forEach((m, idx) => {

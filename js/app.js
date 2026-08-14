@@ -2,7 +2,8 @@
  * Main Application Controller for Agent World Game.
  * Connects UI elements, simulation engine events, canvas visualizer,
  * inspector modal, Worldviews Matrix tab, Cloud Constellation View, Standalone Evolution Stream Section,
- * Interactive Mutation Inspector Modal with Profile Links & Full i18n Localization, Export System, and i18n Language Toggle safely.
+ * Standalone Undiscovered Universal Laws Section, Interactive Mutation Inspector Modal with Profile Links & Full i18n Localization,
+ * Export System, and i18n Language Toggle safely.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -36,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabNetwork = document.getElementById('tab-network');
   const tabWorldviews = document.getElementById('tab-worldviews');
   const tabStream = document.getElementById('tab-stream');
+  const tabLaws = document.getElementById('tab-laws');
   const viewInstruction = document.getElementById('view-instruction');
 
   const canvasWrapper = document.getElementById('canvas-wrapper');
@@ -49,6 +51,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const mutationStreamTitle = document.getElementById('mutation-stream-title');
   const mutationContainer = document.getElementById('mutation-cards-container');
   const mutationBadge = document.getElementById('mutation-count-badge');
+
+  const lawsContainer = document.getElementById('laws-container');
+  const lawsSearch = document.getElementById('laws-search');
+  const lawsStreamTitle = document.getElementById('laws-stream-title');
+  const lawsCardsGrid = document.getElementById('laws-cards-grid');
+  const lawsCountBadge = document.getElementById('laws-count-badge');
 
   const feedList = document.getElementById('feed-list');
   const leaderboardList = document.getElementById('leaderboard-list');
@@ -130,15 +138,20 @@ document.addEventListener('DOMContentLoaded', () => {
     tabNetwork.textContent = I18nManager.t('tabNetwork');
     tabWorldviews.textContent = I18nManager.t('tabWorldviews');
     if (tabStream) tabStream.textContent = I18nManager.t('tabStream');
+    if (tabLaws) tabLaws.textContent = I18nManager.t('tabLaws');
 
     if (currentActiveTab === 'academy') viewInstruction.textContent = I18nManager.t('instructionAcademy');
     else if (currentActiveTab === 'network') viewInstruction.textContent = I18nManager.t('instructionNetwork');
     else if (currentActiveTab === 'worldviews') viewInstruction.textContent = I18nManager.t('instructionWorldviews');
     else if (currentActiveTab === 'stream') viewInstruction.textContent = I18nManager.t('instructionStream');
+    else if (currentActiveTab === 'laws') viewInstruction.textContent = I18nManager.t('instructionLaws');
 
     worldviewsSearch.placeholder = I18nManager.t('searchPlaceholder');
     if (streamSearch) streamSearch.placeholder = I18nManager.t('searchStreamPlaceholder');
     if (mutationStreamTitle) mutationStreamTitle.textContent = I18nManager.t('mutationHeader');
+
+    if (lawsSearch) lawsSearch.placeholder = I18nManager.t('searchLawsPlaceholder');
+    if (lawsStreamTitle) lawsStreamTitle.textContent = I18nManager.t('lawsHeader');
 
     // Update Domain Select Options
     const opt0 = worldviewsDomainFilter.options[0]; if (opt0) opt0.textContent = I18nManager.t('domainAll');
@@ -167,6 +180,8 @@ document.addEventListener('DOMContentLoaded', () => {
       renderWorldviewsMatrix();
     } else if (currentActiveTab === 'stream') {
       renderMutationStreamCards();
+    } else if (currentActiveTab === 'laws') {
+      renderUndiscoveredLaws();
     }
   }
 
@@ -344,6 +359,84 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function renderUndiscoveredLaws() {
+    if (!lawsCardsGrid) return;
+    lawsCardsGrid.innerHTML = '';
+    const isZh = I18nManager.currentLang === 'zh';
+    const query = (lawsSearch ? lawsSearch.value : '').toLowerCase();
+
+    const laws = engine.undiscoveredLaws;
+    if (laws.length === 0) {
+      lawsCardsGrid.innerHTML = `<div style="color: #64748b; font-size: 0.85rem; padding: 20px; text-align: center; grid-column: 1 / -1;">${I18nManager.t('lawsEmpty')}</div>`;
+      return;
+    }
+
+    const filtered = laws.filter(l => {
+      if (!query) return true;
+      const name = isZh ? l.nameZh : l.nameEn;
+      const hyp = isZh ? l.hypothesisZh : l.hypothesisEn;
+      return name.toLowerCase().includes(query) || hyp.toLowerCase().includes(query) || l.agentAName.toLowerCase().includes(query) || l.agentBName.toLowerCase().includes(query);
+    });
+
+    if (filtered.length === 0) {
+      lawsCardsGrid.innerHTML = `<div style="color: #64748b; font-size: 0.85rem; padding: 20px; text-align: center; grid-column: 1 / -1;">No undiscovered laws found matching "${query}".</div>`;
+      return;
+    }
+
+    filtered.forEach(l => {
+      const isZh = I18nManager.currentLang === 'zh';
+      const lawName = isZh ? l.nameZh : l.nameEn;
+      const hypothesis = isZh ? l.hypothesisZh : l.hypothesisEn;
+      const status = isZh ? l.realWorldStatusZh : l.realWorldStatusEn;
+      const nameA = isZh ? l.agentANameZh : l.agentAName;
+      const nameB = isZh ? l.agentBNameZh : l.agentBName;
+
+      const card = document.createElement('div');
+      card.className = 'mutation-card';
+      card.style.background = 'rgba(15, 23, 42, 0.9)';
+      card.style.border = '1px solid rgba(0, 243, 255, 0.4)';
+      card.style.boxShadow = '0 0 15px rgba(0, 243, 255, 0.15)';
+
+      card.innerHTML = `
+        <div class="mutation-card-header" style="border-bottom: 1px solid rgba(0, 243, 255, 0.2); padding-bottom: 8px;">
+          <span style="color: #00f3ff; font-weight: 800; font-size: 0.95rem;">🌌 ${lawName}</span>
+          <span style="font-size: 0.75rem; background: rgba(168,85,247,0.2); color: #a855f7; padding: 2px 8px; border-radius: 12px; font-weight: 800;">
+            ${l.category} • Turn #${l.turn}
+          </span>
+        </div>
+
+        <div style="font-size: 0.82rem; color: #e2e8f0; line-height: 1.5; margin: 10px 0;">
+          <strong>💡 ${isZh ? '核心猜想与假设' : 'Core Hypothesis'}:</strong> "${hypothesis}"
+        </div>
+
+        <div style="background: rgba(30, 41, 59, 0.6); border-radius: 6px; padding: 8px 10px; font-size: 0.75rem; color: #94a3b8; margin-bottom: 10px;">
+          🔍 <strong>${I18nManager.t('realWorldStatusLabel')}</strong> ${status}
+        </div>
+
+        <div style="font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 8px;">
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <span>${I18nManager.t('coDerivedBy')}</span>
+            <span class="agent-link-a" style="color: ${l.agentAColor}; cursor: pointer; font-weight: 700; text-decoration: underline;" title="Click to view thinker profile">
+              ${l.agentAIcon} ${nameA}
+            </span>
+            <span>&</span>
+            <span class="agent-link-b" style="color: ${l.agentBColor}; cursor: pointer; font-weight: 700; text-decoration: underline;" title="Click to view thinker profile">
+              ${l.agentBIcon} ${nameB}
+            </span>
+          </div>
+          <div style="color: #10b981; font-weight: 800;">
+            ⚡ ${I18nManager.t('plausibilityLabel')} ${l.plausibility}%
+          </div>
+        </div>
+      `;
+
+      card.querySelector('.agent-link-a').addEventListener('click', () => openAgentModal(l.agentAId));
+      card.querySelector('.agent-link-b').addEventListener('click', () => openAgentModal(l.agentBId));
+
+      lawsCardsGrid.appendChild(card);
+    });
+  }
+
   function openMutationModal(m) {
     const isZh = I18nManager.currentLang === 'zh';
     const agent = engine.agentMap.get(m.agentId);
@@ -407,6 +500,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (streamSearch) {
     streamSearch.addEventListener('input', renderMutationStreamCards);
+  }
+
+  if (lawsSearch) {
+    lawsSearch.addEventListener('input', renderUndiscoveredLaws);
   }
 
   function startSimulation() {
@@ -475,6 +572,7 @@ document.addEventListener('DOMContentLoaded', () => {
     engine.init();
     feedList.innerHTML = '';
     mutationBadge.textContent = `0 ${I18nManager.t('mutationEvents')}`;
+    if (lawsCountBadge) lawsCountBadge.textContent = `0 ${I18nManager.t('lawsCountBadge')}`;
     statTurns.textContent = '0';
     statMutations.textContent = '0';
     statAwareness.textContent = '0%';
@@ -485,6 +583,8 @@ document.addEventListener('DOMContentLoaded', () => {
       renderWorldviewsMatrix();
     } else if (currentActiveTab === 'stream') {
       renderMutationStreamCards();
+    } else if (currentActiveTab === 'laws') {
+      renderUndiscoveredLaws();
     }
   });
 
@@ -509,9 +609,11 @@ document.addEventListener('DOMContentLoaded', () => {
     tabNetwork.classList.remove('active');
     tabWorldviews.classList.remove('active');
     if (tabStream) tabStream.classList.remove('active');
+    if (tabLaws) tabLaws.classList.remove('active');
     canvasWrapper.style.display = 'block';
     worldviewsContainer.style.display = 'none';
     streamContainer.style.display = 'none';
+    lawsContainer.style.display = 'none';
     viewInstruction.textContent = I18nManager.t('instructionAcademy');
     visualizer.setViewMode('academy');
   });
@@ -522,9 +624,11 @@ document.addEventListener('DOMContentLoaded', () => {
     tabAcademy.classList.remove('active');
     tabWorldviews.classList.remove('active');
     if (tabStream) tabStream.classList.remove('active');
+    if (tabLaws) tabLaws.classList.remove('active');
     canvasWrapper.style.display = 'block';
     worldviewsContainer.style.display = 'none';
     streamContainer.style.display = 'none';
+    lawsContainer.style.display = 'none';
     viewInstruction.textContent = I18nManager.t('instructionNetwork');
     visualizer.setViewMode('network');
   });
@@ -535,9 +639,11 @@ document.addEventListener('DOMContentLoaded', () => {
     tabAcademy.classList.remove('active');
     tabNetwork.classList.remove('active');
     if (tabStream) tabStream.classList.remove('active');
+    if (tabLaws) tabLaws.classList.remove('active');
     canvasWrapper.style.display = 'none';
     worldviewsContainer.style.display = 'flex';
     streamContainer.style.display = 'none';
+    lawsContainer.style.display = 'none';
     viewInstruction.textContent = I18nManager.t('instructionWorldviews');
     visualizer.setViewMode('worldviews');
     renderWorldviewsMatrix();
@@ -550,12 +656,32 @@ document.addEventListener('DOMContentLoaded', () => {
       tabAcademy.classList.remove('active');
       tabNetwork.classList.remove('active');
       tabWorldviews.classList.remove('active');
+      if (tabLaws) tabLaws.classList.remove('active');
       canvasWrapper.style.display = 'none';
       worldviewsContainer.style.display = 'none';
       streamContainer.style.display = 'flex';
+      lawsContainer.style.display = 'none';
       viewInstruction.textContent = I18nManager.t('instructionStream');
       visualizer.setViewMode('stream');
       renderMutationStreamCards();
+    });
+  }
+
+  if (tabLaws) {
+    tabLaws.addEventListener('click', () => {
+      currentActiveTab = 'laws';
+      tabLaws.classList.add('active');
+      tabAcademy.classList.remove('active');
+      tabNetwork.classList.remove('active');
+      tabWorldviews.classList.remove('active');
+      if (tabStream) tabStream.classList.remove('active');
+      canvasWrapper.style.display = 'none';
+      worldviewsContainer.style.display = 'none';
+      streamContainer.style.display = 'none';
+      lawsContainer.style.display = 'flex';
+      viewInstruction.textContent = I18nManager.t('instructionLaws');
+      visualizer.setViewMode('laws');
+      renderUndiscoveredLaws();
     });
   }
 
@@ -618,6 +744,15 @@ document.addEventListener('DOMContentLoaded', () => {
       renderWorldviewsMatrix();
     } else if (currentActiveTab === 'stream') {
       renderMutationStreamCards();
+    }
+  });
+
+  engine.on('lawDiscovered', (law) => {
+    if (lawsCountBadge) lawsCountBadge.textContent = `${engine.undiscoveredLaws.length} ${I18nManager.t('lawsCountBadge')}`;
+    SoundEngine.playEpiphanyFanfare();
+
+    if (currentActiveTab === 'laws') {
+      renderUndiscoveredLaws();
     }
   });
 

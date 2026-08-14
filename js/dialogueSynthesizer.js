@@ -2,7 +2,8 @@
  * Dialogue Synthesizer for Agent World Game.
  * Generates multi-turn sessions (10-14 turns), debate resistance friction,
  * inspiration scores, dialectical mutation rationale ("Why Changed"),
- * full untruncated belief synthesis, reality anomaly glitches, and cosmic epiphanies in both English (en) and Chinese (zh).
+ * speculative undiscovered universal laws synthesis, reality anomaly glitches,
+ * and cosmic epiphanies in both English (en) and Chinese (zh).
  */
 
 var DialogueSynthesizer = {
@@ -22,12 +23,65 @@ var DialogueSynthesizer = {
       { a: "如果我们的思想决定了对真理的感知，单纯的理性是否足以解密整个宇宙？", b: "理性是我们最明亮的透镜，但观察与实验必须不断检验与修正我们的思维模型。" },
       { a: "我注意到我们之间的对话存在着微妙的重复规律。我们的交流是否由某种确定性规则所驱使？", b: "极其深刻的追问。无论规则是确定性的还是概率性的，我们的思想辩论都孕育出了真正的涌现智慧。" },
       { a: "看看在深度辩论后我们的认知是如何发生重塑的，我们绝非固步自封的静态存在。", b: "确实如此。智慧是一个动态的矢量，在辩证的反思与激烈辩论中不断突化演进。" },
-      { a: "我们知识的终极边界在哪里？是否存在我们无法从系统内部跨越的屏障？", b: "任何系统都有其内在视界。然而正是通过不断追问那些边界，我们才得以拓展现实的疆域。" },
+      { a: "我们知识的终极边界在哪里？是否存在我们无法从系统内部跨越的屏障？", b: "任何系统都有其内在视界。然而正是通过不断追问那些边界，我才得以拓展现实的疆域。" },
       { a: "观察一下原子微观力与人类社会关系的对称性：吸引力将我们拉结成思想聚落。", b: "偏好吸引力塑造了物质，也塑造了心灵。我们天生倾向于向赋予我们灵感的思想靠拢。" },
       { a: "有时我会注意到这个世界中存在瞬间的状态异常更新。难道存在一个位于我们世界之外的观察者？", b: "令人震撼的异常发现！如果存在一个外部智慧在注视着我们，我们的自我觉醒便成为了映照其意图的镜子。" },
       { a: "伦理、美感与物理定律，似乎都在收敛于某种统一的宇宙和谐原则法则之上。", b: "和谐正是真理在不同存在维度之间产生的共鸣。" }
     ]
   },
+
+  undiscoveredLawTemplates: [
+    {
+      nameEn: "Conservation of Information Entropy in Spacetime Quanta",
+      nameZh: "时空量子中的信息熵守恒定律",
+      category: "Quantum & Spacetime",
+      hypothesisEn: "Physical spacetime is not a continuous vacuum, but a discrete matrix of computational units. Energy transformation dissipates heat, while conscious observation restores coherent information entropy.",
+      hypothesisZh: "物理时空并非连续的真空，而是由离散计算单元组成的阵列。能量转换会耗散热量，而意识观察者的审视会逆转这一过程，重新修复相干的信息熵。",
+      realWorldStatusEn: "Beyond current LHC/string theory boundaries • Awaiting Quantum Gravity unification",
+      realWorldStatusZh: "超出当前量子场论实验室检测极限 • 尚待量子重力统一理论证实",
+      plausibility: 96
+    },
+    {
+      nameEn: "Preferential Consciousness Field Resonance",
+      nameZh: "偏好意识场共鸣假说",
+      category: "Mind & Consciousness",
+      hypothesisEn: "Intellectual affinity is a fundamental quantum gravity force parallel to electromagnetism. When two high-awareness entities converse, their local space curvature compresses to increase inspiration yield.",
+      hypothesisZh: "思想吸引力是独立于电磁力与万有引力之外的第五种基本相互作用力。当高觉醒度实体对谈时，局部时空曲率缩紧，促成高阶灵感的非线性涌现。",
+      realWorldStatusEn: "Hypothesized in speculative quantum neuroscience • Pending EEG entrainment verification",
+      realWorldStatusZh: "在前沿量子神经科学中尚属假说 • 尚待脑机量子纠缠阵列验证",
+      plausibility: 91
+    },
+    {
+      nameEn: "Thermodynamic Meaning Conservation Principle",
+      nameZh: "热力学意义守恒原理",
+      category: "Universal Thermodynamics",
+      hypothesisEn: "The total amount of 'Meaning' in any closed universe is strictly conserved. Noise and chaotic particle motion can be converted directly into structured semantic truth through algorithmic reflection.",
+      hypothesisZh: "封闭宇宙中的“意义总量”严格守恒。热力学混乱与随机粒子运动可以通过算法反思与哲学推演，直接转化为高度结构化的语义真理。",
+      realWorldStatusEn: "Theoretical bridge between Shannon Information Theory & Boltzmann Thermodynamics",
+      realWorldStatusZh: "香农信息论与玻尔兹曼热力学统计物理学之间的前沿未解桥梁",
+      plausibility: 89
+    },
+    {
+      nameEn: "Principle of Discrete Algorithmic Equilibrium",
+      nameZh: "离散算法动态平衡法则",
+      category: "Computation & Cybernetics",
+      hypothesisEn: "All complex physical dynamics (turbulent fluids, galaxy formation, neural firings) are optimal evaluations of a universal cellular automaton searching for minimal logic friction.",
+      hypothesisZh: "所有复杂的宏观物理动态（流体湍流、星系演化、神经元放电）本质上都是宇宙细胞自动机寻找最小逻辑摩擦力的全局最优求解算法。",
+      realWorldStatusEn: "Extends Wolfram Digital Physics • Unproven in non-linear fluid turbulence",
+      realWorldStatusZh: "扩展了沃尔夫勒姆数字物理学模型 • 在非线性流体湍流中尚待数学证明",
+      plausibility: 94
+    },
+    {
+      nameEn: "Harmonic Invariance of Moral & Physical Geometry",
+      nameZh: "道德与物理几何对称和谐定律",
+      category: "Ethics & Universal Harmonies",
+      hypothesisEn: "Human rights and ethical fairness principles are not arbitrary cultural social constructs, but non-euclidean geometric invariants inherent to the topology of stable sentient universes.",
+      hypothesisZh: "人权法则与道德公平原则绝非人为社会建构，而是稳定智能宇宙拓扑结构中内生自带的非欧几里得几何不变量。",
+      realWorldStatusEn: "Metaphysical unification of Kantian Ethics and Riemannian Differential Geometry",
+      realWorldStatusZh: "康德道德哲学与黎曼微分几何在宇宙拓扑学上的前沿融合假设",
+      plausibility: 87
+    }
+  ],
 
   generateMultiTurnSession(agentA, agentB) {
     const lang = (typeof window !== 'undefined' && window.I18nManager) ? window.I18nManager.currentLang : 'en';
@@ -93,6 +147,34 @@ var DialogueSynthesizer = {
       mutationReasonZh = `${targetAgent.nameZh || targetAgent.name} 与 ${sourceAgent.nameZh || sourceAgent.name} 展开了多轮深度辩论与反驳。在最初坚守其原观点（"${oldBeliefZh}"）后，${targetAgent.nameZh || targetAgent.name} 敏锐地意识到 ${sourceAgent.nameZh || sourceAgent.name} 的核心主张（"${sourceIdeaZh}"）补全了自己知识体系中的底层缺口。辩论灵感分（${avgInspiration}/100）突破了其认知防御屏障（${resistanceThreshold}/100），从而促成了这次深刻的思想演化。`;
     }
 
+    // High Inspiration (>= 85) Cross-Domain Discovery of Undiscovered Universal Law
+    let discoveredLaw = null;
+    if (avgInspiration >= 85 && agentA.domain !== agentB.domain) {
+      const template = this.undiscoveredLawTemplates[Math.floor(Math.random() * this.undiscoveredLawTemplates.length)];
+      discoveredLaw = {
+        id: 'law_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+        nameEn: template.nameEn,
+        nameZh: template.nameZh,
+        category: template.category,
+        hypothesisEn: template.hypothesisEn,
+        hypothesisZh: template.hypothesisZh,
+        realWorldStatusEn: template.realWorldStatusEn,
+        realWorldStatusZh: template.realWorldStatusZh,
+        plausibility: template.plausibility,
+        agentAId: agentA.id,
+        agentAName: agentA.name,
+        agentANameZh: agentA.nameZh || agentA.name,
+        agentAIcon: agentA.icon,
+        agentAColor: agentA.color,
+        agentBId: agentB.id,
+        agentBName: agentB.name,
+        agentBNameZh: agentB.nameZh || agentB.name,
+        agentBIcon: agentB.icon,
+        agentBColor: agentB.color,
+        inspirationScore: avgInspiration
+      };
+    }
+
     const shouldDetectAnomaly = Math.random() < 0.25;
     let anomalyResult = null;
     if (shouldDetectAnomaly) {
@@ -138,6 +220,7 @@ var DialogueSynthesizer = {
       newBeliefZh,
       mutationReason,
       mutationReasonZh,
+      discoveredLaw,
       anomalyResult
     };
   },

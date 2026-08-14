@@ -78,6 +78,7 @@
             <button id="tab-network" class="tab-btn">☁️ Cloud Node Constellation</button>
             <button id="tab-worldviews" class="tab-btn">📚 All 25 Worldviews Matrix</button>
             <button id="tab-stream" class="tab-btn">⚡ Worldview Evolution Stream</button>
+            <button id="tab-laws" class="tab-btn">🌌 Undiscovered Laws</button>
           </div>
           <div id="view-instruction" style="font-size: 0.8rem; color: #94a3b8;">
             Click any agent node to inspect Top 10 World Understandings
@@ -119,6 +120,22 @@
           <div id="mutation-cards-container" class="mutation-cards-grid">
             <div style="color: #64748b; font-size: 0.85rem; padding: 20px; text-align: center;">
               No belief mutations recorded yet. Start simulation to observe worldview shifts!
+            </div>
+          </div>
+        </div>
+
+        <!-- Standalone 5th Section: Undiscovered Universal Laws Matrix Container -->
+        <div id="laws-container" class="stream-container" style="display: none;">
+          <div class="stream-filter-bar">
+            <div class="mutation-stream-header" style="flex: 1;">
+              <span id="laws-stream-title" style="font-weight: 700; color: #00f3ff; font-size: 0.95rem;">🌌 Undiscovered Universal Laws Matrix (Emergent Breakthroughs)</span>
+              <span id="laws-count-badge" style="color: #a855f7; font-weight: 800; font-size: 0.9rem; margin-left: 12px;">0 New Laws</span>
+            </div>
+            <input type="text" id="laws-search" placeholder="🔍 Search speculative undiscovered universal laws..." class="search-input" style="max-width: 320px;" />
+          </div>
+          <div id="laws-cards-grid" class="mutation-cards-grid">
+            <div style="color: #64748b; font-size: 0.85rem; padding: 20px; text-align: center; grid-column: 1 / -1;">
+              No speculative universal laws synthesized yet. Start simulation to trigger cross-domain breakthroughs!
             </div>
           </div>
         </div>
@@ -323,12 +340,12 @@
   </button>
 
   <!-- Application Scripts with i18n & Cache Buster -->
-  <script src="js/i18n.js?v=1.4.5"></script>
-  <script src="js/agentsData.js?v=1.4.5"></script>
-  <script src="js/dialogueSynthesizer.js?v=1.4.5"></script>
-  <script src="js/simulationEngine.js?v=1.4.5"></script>
-  <script src="js/worldVisualizer.js?v=1.4.5"></script>
-  <script src="js/audioEffects.js?v=1.4.5"></script>
-  <script src="js/app.js?v=1.4.5"></script>
+  <script src="js/i18n.js?v=1.5.0"></script>
+  <script src="js/agentsData.js?v=1.5.0"></script>
+  <script src="js/dialogueSynthesizer.js?v=1.5.0"></script>
+  <script src="js/simulationEngine.js?v=1.5.0"></script>
+  <script src="js/worldVisualizer.js?v=1.5.0"></script>
+  <script src="js/audioEffects.js?v=1.5.0"></script>
+  <script src="js/app.js?v=1.5.0"></script>
 </body>
 </html>
